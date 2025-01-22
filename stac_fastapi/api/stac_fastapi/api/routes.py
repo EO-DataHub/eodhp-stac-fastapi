@@ -3,10 +3,15 @@
 import copy
 import functools
 import inspect
+import jwt
+import logging
+import requests
 from typing import Any, Callable, Dict, List, Optional, Type, TypedDict, Union
 
 from fastapi import Depends, params
 from fastapi.dependencies.utils import get_parameterless_sub_dependant
+from fastapi.responses import JSONResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 from starlette.concurrency import run_in_threadpool
 from starlette.requests import Request
@@ -16,12 +21,40 @@ from starlette.status import HTTP_204_NO_CONTENT
 
 from stac_fastapi.api.models import APIRequest
 
+from stac_fastapi.api.settings import KEYCLOAK_BASE_URL, REALM, CLIENT_ID, CLIENT_SECRET, CACHE_CONTROL_CATALOGS_LIST, CACHE_CONTROL_HEADERS
 
-def _wrap_response(resp: Any) -> Any:
+# Get the logger for this module
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)  # Set the logging level to INFO for this module
+
+# Create a console handler and set the level to INFO
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+
+# Create a formatter and set it for the handler
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+console_handler.setFormatter(formatter)
+
+# Add the handler to the logger
+logger.addHandler(console_handler)
+
+KEYCLOAK_URL = f"{KEYCLOAK_BASE_URL}/realms/{REALM}/protocol/openid-connect/token"
+
+def _wrap_response(resp: Any, verb: str, url_path: str) -> Any:
     if resp is not None:
-        return resp
+        if verb == "GET":
+            if url_path.startswith("/catalogs/"):
+                root_catalog = url_path.split("/")[2]
+                if root_catalog in CACHE_CONTROL_CATALOGS_LIST:
+                    # Add cache control headers
+                    return JSONResponse(content=resp, headers={"cache-control": CACHE_CONTROL_HEADERS})
+            elif url_path=="/":
+                return JSONResponse(content=resp, headers={"cache-control": CACHE_CONTROL_HEADERS})
+        # Return with no cache control headers
+        return JSONResponse(content=resp, headers={"cache-control": "max-age=0"})
     else:  # None is returned as 204 No Content
-        return Response(status_code=HTTP_204_NO_CONTENT)
+        return Response(status_code=HTTP_204_NO_CONTENT, headers={"cache-control": "max-age=0"})
+
 
 
 def sync_to_async(func):
@@ -32,6 +65,60 @@ def sync_to_async(func):
         return await run_in_threadpool(func, *args, **kwargs)
 
     return run
+
+# Define the OAuth2 scheme for Bearer token
+bearer_scheme = HTTPBearer(auto_error=False)
+
+def token_exchange(subject_token: str, scope: str = None) -> str:
+    payload = {
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
+        "subject_token": subject_token,
+        "scope": scope,
+    }
+    response = requests.post(
+        KEYCLOAK_URL,
+        data=payload,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+
+    if not response.ok:
+        raise Exception(f"Error: {response.text}")
+
+    return response.json().get("access_token")
+
+# TODO: Also extract group information from the headers
+def extract_headers(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+) -> Dict[str, Any]:
+    """Extract headers from request.
+
+    Args:
+        token: The OAuth2 token extracted from the Authorization header.
+
+    Returns:
+        Dict of headers.
+    """
+    headers = {}
+    if credentials:
+        # Exchange the token
+        keycloak_token = token_exchange(credentials.credentials, "workspaces")
+        decoded_jwt = jwt.decode(
+            keycloak_token,
+            options={"verify_signature": False},
+            algorithms=["HS256"],
+        )
+        workspaces = decoded_jwt.get("workspaces", [])
+        logger.info(f"User is authenticated with workspaces: {workspaces}")
+        headers["X-Workspaces"] = workspaces
+        headers["X-Authenticated"] = True
+    else:
+        logger.info("User is not authenticated")
+        headers["X-Workspaces"] = ["tjellicoe-tpzuk"]
+        headers["X-Authenticated"] = True
+
+    return headers  # Allows support for more headers in future, e.g. group information
 
 
 def create_async_endpoint(
@@ -51,27 +138,36 @@ def create_async_endpoint(
         async def _endpoint(
             request: Request,
             request_data: request_model = Depends(),  # type:ignore
+            headers=Depends(extract_headers),
         ):
             """Endpoint."""
-            return _wrap_response(await func(request=request, **request_data.kwargs()))
+            return _wrap_response(await func(request=request, auth_headers=headers, **request_data.kwargs()),
+                                  request.method,
+                                  request.url.path)
 
     elif issubclass(request_model, BaseModel):
 
         async def _endpoint(
             request: Request,
             request_data: request_model,  # type:ignore
+            headers=Depends(extract_headers),
         ):
             """Endpoint."""
-            return _wrap_response(await func(request_data, request=request))
+            return _wrap_response(await func(request_data, auth_headers=headers, request=request),
+                                  request.method,
+                                  request.url.path)
 
     else:
 
         async def _endpoint(
             request: Request,
             request_data: Dict[str, Any],  # type:ignore
+            headers=Depends(extract_headers),
         ):
             """Endpoint."""
-            return _wrap_response(await func(request_data, request=request))
+            return _wrap_response(await func(request_data, auth_headers=headers, request=request),
+                                  request.method,
+                                  request.url.path)
 
     return _endpoint
 

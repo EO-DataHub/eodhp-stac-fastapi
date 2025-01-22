@@ -9,15 +9,15 @@ from stac_pydantic.shared import BBox
 from typing_extensions import Annotated
 
 from stac_fastapi.types.extension import ApiExtension
+from stac_fastapi.types.rfc3339 import DateTimeType
 from stac_fastapi.types.search import (
     APIRequest,
     BaseSearchGetRequest,
     BaseSearchPostRequest,
-    DatetimeMixin,
-    DateTimeQueryType,
+    BaseSearchAllGetRequest,
     Limit,
     _bbox_converter,
-    _validate_datetime,
+    _datetime_converter,
 )
 
 try:
@@ -74,6 +74,19 @@ def create_get_request_model(
         request_type="GET",
     )
 
+def create_get_all_request_model(
+    extensions: Optional[List[ApiExtension]],
+    base_model: BaseSearchAllGetRequest = BaseSearchAllGetRequest,
+) -> APIRequest:
+    """Wrap create_request_model to create the GET request model."""
+
+    return create_request_model(
+        "SearchAllGetRequest",
+        base_model=base_model,
+        extensions=extensions,
+        request_type="GET",
+    )
+
 
 def create_post_request_model(
     extensions: Optional[List[ApiExtension]],
@@ -87,19 +100,30 @@ def create_post_request_model(
         request_type="POST",
     )
 
+@attr.s
+class CatalogUri(APIRequest):
+    """Get or delete catalog."""
+
+    cat_path: Annotated[str, Path(description="Catalog path", regex=r"^([^/]+)(/catalogs/[^/]+)*$")] = attr.ib()
 
 @attr.s
-class CollectionUri(APIRequest):
+class CreateCatalogUri(APIRequest):
+    """Get or delete catalog."""
+
+    cat_path: Annotated[str, Path(description="Catalog path", regex=r"root$|(^([^/]+)(/catalogs/[^/]+)*$)")] = attr.ib()
+
+
+@attr.s
+class CollectionUri(CatalogUri):
     """Get or delete collection."""
 
     collection_id: Annotated[str, Path(description="Collection ID")] = attr.ib()
-
+    
 
 @attr.s
-class ItemUri(APIRequest):
+class ItemUri(CollectionUri):
     """Get or delete item."""
 
-    collection_id: Annotated[str, Path(description="Collection ID")] = attr.ib()
     item_id: Annotated[str, Path(description="Item ID")] = attr.ib()
 
 
@@ -111,10 +135,9 @@ class EmptyRequest(APIRequest):
 
 
 @attr.s
-class ItemCollectionUri(APIRequest, DatetimeMixin):
+class ItemCollectionUri(CollectionUri):
     """Get item collection."""
 
-    collection_id: Annotated[str, Path(description="Collection ID")] = attr.ib()
     limit: Annotated[
         Optional[Limit],
         Query(
@@ -122,7 +145,9 @@ class ItemCollectionUri(APIRequest, DatetimeMixin):
         ),
     ] = attr.ib(default=10)
     bbox: Optional[BBox] = attr.ib(default=None, converter=_bbox_converter)
-    datetime: DateTimeQueryType = attr.ib(default=None, validator=_validate_datetime)
+    datetime: Optional[DateTimeType] = attr.ib(
+        default=None, converter=_datetime_converter
+    )
 
 
 class GeoJSONResponse(JSONResponse):

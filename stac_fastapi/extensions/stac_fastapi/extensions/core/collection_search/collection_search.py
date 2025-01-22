@@ -1,14 +1,16 @@
 """Collection-Search extension."""
 
+import warnings
 from enum import Enum
 from typing import List, Optional, Union
+from typing_extensions import Annotated
 
 import attr
-from fastapi import APIRouter, FastAPI
+from fastapi import APIRouter, FastAPI, Path
 from stac_pydantic.api.collections import Collections
 from stac_pydantic.shared import MimeTypes
 
-from stac_fastapi.api.models import GeoJSONResponse, create_request_model
+from stac_fastapi.api.models import GeoJSONResponse, create_request_model, APIRequest
 from stac_fastapi.api.routes import create_async_endpoint
 from stac_fastapi.types.config import ApiSettings
 from stac_fastapi.types.extension import ApiExtension
@@ -78,7 +80,7 @@ class CollectionSearchExtension(ApiExtension):
         schema_href: Optional[str] = None,
     ) -> "CollectionSearchExtension":
         """Create CollectionSearchExtension object from extensions."""
-        known_extension_conformances = {
+        supported_extensions = {
             "FreeTextExtension": ConformanceClasses.FREETEXT,
             "FreeTextAdvancedExtension": ConformanceClasses.FREETEXT,
             "QueryExtension": ConformanceClasses.QUERY,
@@ -91,7 +93,13 @@ class CollectionSearchExtension(ApiExtension):
             ConformanceClasses.BASIS,
         ]
         for ext in extensions:
-            if conf := known_extension_conformances.get(ext.__class__.__name__, None):
+            conf = supported_extensions.get(ext.__class__.__name__, None)
+            if not conf:
+                warnings.warn(
+                    f"Conformance class for `{ext.__class__.__name__}` extension not found.",  # noqa: E501
+                    UserWarning,
+                )
+            else:
                 conformance_classes.append(conf)
 
         get_request_model = create_request_model(
@@ -150,7 +158,7 @@ class CollectionSearchPostExtension(CollectionSearchExtension):
         self.router.prefix = app.state.router_prefix
 
         self.router.add_api_route(
-            name="Collections",
+            name="Post All Collections",
             path="/collections",
             methods=["POST"],
             response_model=(
@@ -167,7 +175,32 @@ class CollectionSearchPostExtension(CollectionSearchExtension):
             response_class=GeoJSONResponse,
             endpoint=create_async_endpoint(self.client.post_all_collections, self.POST),
         )
+
+        @attr.s
+        class POST_cat_path(APIRequest):
+            cat_path: Annotated[str, Path(description="Catalog path", regex=r"^(catalogs/[^/]+)(/catalogs/[^/]+)*")] = attr.ib()
+            search_request: self.POST = attr.ib()
+
+        self.router.add_api_route(
+            name="Post Collections",
+            path="/catalogs/{cat_path:path}/collections",
+            methods=["POST"],
+            response_model=(
+                Collections if self.settings.enable_response_models else None
+            ),
+            responses={
+                200: {
+                    "content": {
+                        MimeTypes.json.value: {},
+                    },
+                    "model": Collections,
+                },
+            },
+            response_class=GeoJSONResponse,
+            endpoint=create_async_endpoint(self.client.post_all_collections, POST_cat_path),
+        )
         app.include_router(self.router)
+
 
     @classmethod
     def from_extensions(
@@ -180,7 +213,7 @@ class CollectionSearchPostExtension(CollectionSearchExtension):
         router: Optional[APIRouter] = None,
     ) -> "CollectionSearchPostExtension":
         """Create CollectionSearchPostExtension object from extensions."""
-        known_extension_conformances = {
+        supported_extensions = {
             "FreeTextExtension": ConformanceClasses.FREETEXT,
             "FreeTextAdvancedExtension": ConformanceClasses.FREETEXT,
             "QueryExtension": ConformanceClasses.QUERY,
@@ -193,7 +226,13 @@ class CollectionSearchPostExtension(CollectionSearchExtension):
             ConformanceClasses.BASIS,
         ]
         for ext in extensions:
-            if conf := known_extension_conformances.get(ext.__class__.__name__, None):
+            conf = supported_extensions.get(ext.__class__.__name__, None)
+            if not conf:
+                warnings.warn(
+                    f"Conformance class for `{ext.__class__.__name__}` extension not found.",  # noqa: E501
+                    UserWarning,
+                )
+            else:
                 conformance_classes.append(conf)
 
         get_request_model = create_request_model(

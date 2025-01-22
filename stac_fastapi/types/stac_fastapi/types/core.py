@@ -1,13 +1,14 @@
 """Base clients."""
 
 import abc
+import warnings
 from typing import Any, Dict, List, Optional, Union
 from urllib.parse import urljoin
 
 import attr
 from fastapi import Request
 from geojson_pydantic.geometries import Geometry
-from stac_pydantic import Collection, Item, ItemCollection
+from stac_pydantic import Catalog, Collection, Item, ItemCollection
 from stac_pydantic.links import Relations
 from stac_pydantic.shared import BBox, MimeTypes
 from stac_pydantic.version import STAC_VERSION
@@ -18,6 +19,7 @@ from stac_fastapi.types.config import ApiSettings
 from stac_fastapi.types.conformance import BASE_CONFORMANCE_CLASSES
 from stac_fastapi.types.extension import ApiExtension
 from stac_fastapi.types.requests import get_base_url
+from stac_fastapi.types.rfc3339 import DateTimeType
 from stac_fastapi.types.search import BaseSearchPostRequest
 
 __all__ = [
@@ -43,6 +45,7 @@ class BaseTransactionsClient(abc.ABC):
     @abc.abstractmethod
     def create_item(
         self,
+        cat_path: str,
         collection_id: str,
         item: Union[Item, ItemCollection],
         **kwargs,
@@ -62,7 +65,7 @@ class BaseTransactionsClient(abc.ABC):
 
     @abc.abstractmethod
     def update_item(
-        self, collection_id: str, item_id: str, item: Item, **kwargs
+        self, cat_path: str, collection_id: str, item_id: str, item: Item, **kwargs
     ) -> Optional[Union[stac.Item, Response]]:
         """Perform a complete update on an existing item.
 
@@ -82,7 +85,7 @@ class BaseTransactionsClient(abc.ABC):
 
     @abc.abstractmethod
     def delete_item(
-        self, item_id: str, collection_id: str, **kwargs
+        self, cat_path: str, item_id: str, collection_id: str, **kwargs
     ) -> Optional[Union[stac.Item, Response]]:
         """Delete an item from a collection.
 
@@ -99,7 +102,7 @@ class BaseTransactionsClient(abc.ABC):
 
     @abc.abstractmethod
     def create_collection(
-        self, collection: Collection, **kwargs
+        self, cat_path: str, collection: Collection, workspace: str, **kwargs
     ) -> Optional[Union[stac.Collection, Response]]:
         """Create a new collection.
 
@@ -115,7 +118,7 @@ class BaseTransactionsClient(abc.ABC):
 
     @abc.abstractmethod
     def update_collection(
-        self, collection_id: str, collection: Collection, **kwargs
+        self, cat_path: str, collection_id: str, collection: Collection, workspace: str, **kwargs
     ) -> Optional[Union[stac.Collection, Response]]:
         """Perform a complete update on an existing collection.
 
@@ -135,7 +138,7 @@ class BaseTransactionsClient(abc.ABC):
 
     @abc.abstractmethod
     def delete_collection(
-        self, collection_id: str, **kwargs
+        self, cat_path: str, collection_id: str, workspace: str, **kwargs
     ) -> Optional[Union[stac.Collection, Response]]:
         """Delete a collection.
 
@@ -149,6 +152,58 @@ class BaseTransactionsClient(abc.ABC):
         """
         ...
 
+    @abc.abstractmethod
+    def create_catalog(
+        self, catalog: Catalog, cat_path: str, workspace: str, **kwargs
+    ) -> Optional[Union[stac.Catalog, Response]]:
+        """Create a new catalog.
+
+        Called with `POST /catalogs`.
+
+        Args:
+            catalog: the catalog
+
+        Returns:
+            The catalog that was created.
+        """
+        ...
+
+    @abc.abstractmethod
+    def update_catalog(
+        self, cat_path: str, catalog: Catalog, workspace: str, **kwargs
+    ) -> Optional[Union[stac.Catalog, Response]]:
+        """Perform a complete update on an existing catalog.
+
+        Called with `PUT /catalogs/{catalog_id}`. It is expected that this
+        catalog already exists.  The update should do a diff against the saved
+        catalog and perform any necessary updates.  Partial updates are not
+        supported by the transactions extension.
+
+        Args:
+            catalog_id: id of the existing catalog to be updated
+            catalog: the updated catalog (must be complete)
+
+        Returns:
+            The updated catalog.
+        """
+        ...
+
+    @abc.abstractmethod
+    def delete_catalog(
+        self, cat_path: str, workspace: str, **kwargs
+    ) -> Optional[Union[stac.Catalog, Response]]:
+        """Delete a catalog.
+
+        Called with `DELETE /catalogs/{catalog_id}`
+
+        Args:
+            catalog_id: id of the catalog.
+
+        Returns:
+            The deleted catalog.
+        """
+        ...
+
 
 @attr.s  # type:ignore
 class AsyncBaseTransactionsClient(abc.ABC):
@@ -157,8 +212,10 @@ class AsyncBaseTransactionsClient(abc.ABC):
     @abc.abstractmethod
     async def create_item(
         self,
+        cat_path: str,
         collection_id: str,
         item: Union[Item, ItemCollection],
+        workspace: str,
         **kwargs,
     ) -> Optional[Union[stac.Item, Response, None]]:
         """Create a new item.
@@ -176,7 +233,7 @@ class AsyncBaseTransactionsClient(abc.ABC):
 
     @abc.abstractmethod
     async def update_item(
-        self, collection_id: str, item_id: str, item: Item, **kwargs
+        self, cat_path: str, collection_id: str, item_id: str, item: Item, workspace: str, **kwargs
     ) -> Optional[Union[stac.Item, Response]]:
         """Perform a complete update on an existing item.
 
@@ -195,7 +252,7 @@ class AsyncBaseTransactionsClient(abc.ABC):
 
     @abc.abstractmethod
     async def delete_item(
-        self, item_id: str, collection_id: str, **kwargs
+        self, cat_path: str, item_id: str, collection_id: str, workspace: str, **kwargs
     ) -> Optional[Union[stac.Item, Response]]:
         """Delete an item from a collection.
 
@@ -212,7 +269,7 @@ class AsyncBaseTransactionsClient(abc.ABC):
 
     @abc.abstractmethod
     async def create_collection(
-        self, collection: Collection, **kwargs
+        self, cat_path: str, collection: Collection, workspace: str, **kwargs
     ) -> Optional[Union[stac.Collection, Response]]:
         """Create a new collection.
 
@@ -228,7 +285,7 @@ class AsyncBaseTransactionsClient(abc.ABC):
 
     @abc.abstractmethod
     async def update_collection(
-        self, collection_id: str, collection: Collection, **kwargs
+        self, cat_path: str, collection_id: str, collection: Collection, workspace: str, **kwargs
     ) -> Optional[Union[stac.Collection, Response]]:
         """Perform a complete update on an existing collection.
 
@@ -248,7 +305,7 @@ class AsyncBaseTransactionsClient(abc.ABC):
 
     @abc.abstractmethod
     async def delete_collection(
-        self, collection_id: str, **kwargs
+        self, cat_path: str, collection_id: str, workspace: str, **kwargs
     ) -> Optional[Union[stac.Collection, Response]]:
         """Delete a collection.
 
@@ -259,6 +316,58 @@ class AsyncBaseTransactionsClient(abc.ABC):
 
         Returns:
             The deleted collection.
+        """
+        ...
+
+    @abc.abstractmethod
+    async def create_catalog(
+        self, cat_path: str, catalog: Catalog, workspace: str, **kwargs
+    ) -> Optional[Union[stac.Catalog, Response]]:
+        """Create a new catalog.
+
+        Called with `POST /catalogs`.
+
+        Args:
+            catalog: the catalog
+
+        Returns:
+            The catalog that was created.
+        """
+        ...
+
+    @abc.abstractmethod
+    async def update_catalog(
+        self, cat_path: str, catalog: Catalog, workspace: str, **kwargs
+    ) -> Optional[Union[stac.Catalog, Response]]:
+        """Perform a complete update on an existing catalog.
+
+        Called with `PUT /catalogs/{catalog_id}`. It is expected that this item
+        already exists.  The update should do a diff against the saved catalog and
+        perform any necessary updates.  Partial updates are not supported by the
+        transactions extension.
+
+        Args:
+            catalog_id: id of the existing catalog to be updated
+            catalog: the updated catalog (must be complete)
+
+        Returns:
+            The updated catalog.
+        """
+        ...
+
+    @abc.abstractmethod
+    async def delete_catalog(
+        self, cat_path: str, workspace: str, **kwargs
+    ) -> Optional[Union[stac.Catalog, Response]]:
+        """Delete a catalog.
+
+        Called with `DELETE /catalogs/{catalog_id}`
+
+        Args:
+            catalog_id: id of the catalog.
+
+        Returns:
+            The deleted catalog.
         """
         ...
 
@@ -340,6 +449,20 @@ class BaseCoreClient(LandingPageMixin, abc.ABC):
         factory=lambda: BASE_CONFORMANCE_CLASSES
     )
     extensions: List[ApiExtension] = attr.ib(default=attr.Factory(list))
+    post_request_model = attr.ib(default=None)
+
+    @post_request_model.validator
+    def _deprecate_post_model(self, attribute, value):
+        """Check and raise warning if `post_request_model` is set."""
+        if value is not None:
+            warnings.warn(
+                "`post_request_model` attribute is deprecated and will be removed in 3.1",
+                DeprecationWarning,
+            )
+
+    def __attrs_post_init__(self):
+        """Set default value for post_request_model."""
+        self.post_request_model = self.post_request_model or BaseSearchPostRequest
 
     def conformance_classes(self) -> List[str]:
         """Generate conformance classes by adding extension conformance to base
@@ -460,7 +583,7 @@ class BaseCoreClient(LandingPageMixin, abc.ABC):
 
     @abc.abstractmethod
     def post_search(
-        self, search_request: BaseSearchPostRequest, **kwargs
+        self, search_request: BaseSearchPostRequest, cat_path: str = None, **kwargs
     ) -> stac.ItemCollection:
         """Cross catalog search (POST).
 
@@ -477,11 +600,12 @@ class BaseCoreClient(LandingPageMixin, abc.ABC):
     @abc.abstractmethod
     def get_search(
         self,
+        cat_path: str,
         collections: Optional[List[str]] = None,
         ids: Optional[List[str]] = None,
         bbox: Optional[BBox] = None,
         intersects: Optional[Geometry] = None,
-        datetime: Optional[str] = None,
+        datetime: Optional[DateTimeType] = None,
         limit: Optional[int] = 10,
         **kwargs,
     ) -> stac.ItemCollection:
@@ -495,7 +619,7 @@ class BaseCoreClient(LandingPageMixin, abc.ABC):
         ...
 
     @abc.abstractmethod
-    def get_item(self, item_id: str, collection_id: str, **kwargs) -> stac.Item:
+    def get_item(self, cat_path: str, item_id: str, collection_id: str, **kwargs) -> stac.Item:
         """Get item by id.
 
         Called with `GET /collections/{collection_id}/items/{item_id}`.
@@ -521,7 +645,7 @@ class BaseCoreClient(LandingPageMixin, abc.ABC):
         ...
 
     @abc.abstractmethod
-    def get_collection(self, collection_id: str, **kwargs) -> stac.Collection:
+    def get_collection(self, cat_path: str, collection_id: str, **kwargs) -> stac.Collection:
         """Get collection by id.
 
         Called with `GET /collections/{collection_id}`.
@@ -535,11 +659,37 @@ class BaseCoreClient(LandingPageMixin, abc.ABC):
         ...
 
     @abc.abstractmethod
+    def all_catalogs(self, **kwargs) -> stac.Catalogs:
+        """Get all available catalogs.
+
+        Called with `GET /catalogs`.
+
+        Returns:
+            A list of catalogs.
+        """
+        ...
+
+    @abc.abstractmethod
+    def get_catalog(self, cat_path: str, **kwargs) -> stac.Catalog:
+        """Get catalog by id.
+
+        Called with `GET /catalogs/{cat_path}`.
+
+        Args:
+            cat_path: Path of the catalog.
+
+        Returns:
+            Catalog.
+        """
+        ...
+
+    @abc.abstractmethod
     def item_collection(
         self,
+        cat_path: str,
         collection_id: str,
         bbox: Optional[BBox] = None,
-        datetime: Optional[str] = None,
+        datetime: Optional[DateTimeType] = None,
         limit: int = 10,
         token: str = None,
         **kwargs,
@@ -571,6 +721,20 @@ class AsyncBaseCoreClient(LandingPageMixin, abc.ABC):
         factory=lambda: BASE_CONFORMANCE_CLASSES
     )
     extensions: List[ApiExtension] = attr.ib(default=attr.Factory(list))
+    post_request_model = attr.ib(default=None)
+
+    @post_request_model.validator
+    def _deprecate_post_model(self, attribute, value):
+        """Check and raise warning if `post_request_model` is set."""
+        if value is not None:
+            warnings.warn(
+                "`post_request_model` attribute is deprecated and will be removed in 3.1",
+                DeprecationWarning,
+            )
+
+    def __attrs_post_init__(self):
+        """Set default value for post_request_model."""
+        self.post_request_model = self.post_request_model or BaseSearchPostRequest
 
     def conformance_classes(self) -> List[str]:
         """Generate conformance classes by adding extension conformance to base
@@ -703,7 +867,7 @@ class AsyncBaseCoreClient(LandingPageMixin, abc.ABC):
         ids: Optional[List[str]] = None,
         bbox: Optional[BBox] = None,
         intersects: Optional[Geometry] = None,
-        datetime: Optional[str] = None,
+        datetime: Optional[DateTimeType] = None,
         limit: Optional[int] = 10,
         **kwargs,
     ) -> stac.ItemCollection:
@@ -717,7 +881,7 @@ class AsyncBaseCoreClient(LandingPageMixin, abc.ABC):
         ...
 
     @abc.abstractmethod
-    async def get_item(self, item_id: str, collection_id: str, **kwargs) -> stac.Item:
+    async def get_item(self, cat_path: str, item_id: str, collection_id: str, **kwargs) -> stac.Item:
         """Get item by id.
 
         Called with `GET /collections/{collection_id}/items/{item_id}`.
@@ -743,7 +907,7 @@ class AsyncBaseCoreClient(LandingPageMixin, abc.ABC):
         ...
 
     @abc.abstractmethod
-    async def get_collection(self, collection_id: str, **kwargs) -> stac.Collection:
+    async def get_collection(self, cat_path: str, collection_id: str, **kwargs) -> stac.Collection:
         """Get collection by id.
 
         Called with `GET /collections/{collection_id}`.
@@ -757,11 +921,37 @@ class AsyncBaseCoreClient(LandingPageMixin, abc.ABC):
         ...
 
     @abc.abstractmethod
+    def all_catalogs(self, **kwargs) -> stac.Catalogs:
+        """Get all available catalogs.
+
+        Called with `GET /catalogs`.
+
+        Returns:
+            A list of catalogs.
+        """
+        ...
+
+    @abc.abstractmethod
+    def get_catalog(self, cat_path: str, **kwargs) -> stac.Catalog:
+        """Get catalog by id.
+
+        Called with `GET /catalogs/{cat_path}`.
+
+        Args:
+            cat_path: Path of the catalog.
+
+        Returns:
+            Catalog.
+        """
+        ...
+
+    @abc.abstractmethod
     async def item_collection(
         self,
+        cat_path: str,
         collection_id: str,
         bbox: Optional[BBox] = None,
-        datetime: Optional[str] = None,
+        datetime: Optional[DateTimeType] = None,
         limit: int = 10,
         token: str = None,
         **kwargs,

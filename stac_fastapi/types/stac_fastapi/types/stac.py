@@ -86,3 +86,14 @@ class Collections(TypedDict, total=False):
     links: List[Dict[str, Any]]
     numberMatched: Optional[int] = None
     numberReturned: Optional[int] = None
+
+
+class Catalogs(TypedDict, total=False):
+    """All catalogs endpoint.
+    https://github.com/radiantearth/stac-api-spec/tree/master/catalogs
+    """
+
+    catalogs: List[Catalog]
+    links: List[Dict[str, Any]]
+    numberMatched: Optional[int] = None
+    numberReturned: Optional[int] = None

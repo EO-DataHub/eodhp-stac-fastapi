@@ -1,11 +1,12 @@
 """Aggregation Extension."""
 from enum import Enum
 from typing import List, Union
+from typing_extensions import Annotated
 
 import attr
-from fastapi import APIRouter, FastAPI
+from fastapi import APIRouter, FastAPI, Path
 
-from stac_fastapi.api.models import CollectionUri, EmptyRequest
+from stac_fastapi.api.models import CollectionUri, EmptyRequest, APIRequest
 from stac_fastapi.api.routes import create_async_endpoint
 from stac_fastapi.types.extension import ApiExtension
 
@@ -80,7 +81,7 @@ class AggregationExtension(ApiExtension):
         )
         self.router.add_api_route(
             name="Collection Aggregations",
-            path="/collections/{collection_id}/aggregations",
+            path="/catalogs/{cat_path:path}/collections/{collection_id}/aggregations",
             methods=["GET", "POST"],
             endpoint=create_async_endpoint(self.client.get_aggregations, CollectionUri),
         )
@@ -98,14 +99,21 @@ class AggregationExtension(ApiExtension):
         )
         self.router.add_api_route(
             name="Collection Aggregate",
-            path="/collections/{collection_id}/aggregate",
+            path="/catalogs/{cat_path:path}/collections/{collection_id}/aggregate",
             methods=["GET"],
             endpoint=create_async_endpoint(self.client.aggregate, self.GET),
         )
+
+        @attr.s
+        class POST_cat_path(APIRequest):
+            cat_path: Annotated[str, Path(description="Catalog path", regex=r"^(catalogs/[^/]+)(/catalogs/[^/]+)*")] = attr.ib()
+            collection_id: Annotated[str, Path(description="Collection ID")] = attr.ib()
+            search_request: self.POST = attr.ib()
+            
         self.router.add_api_route(
             name="Collection Aggregate",
-            path="/collections/{collection_id}/aggregate",
+            path="/catalogs/{cat_path:path}/collections/{collection_id}/aggregate",
             methods=["POST"],
-            endpoint=create_async_endpoint(self.client.aggregate, self.POST),
+            endpoint=create_async_endpoint(self.client.aggregate, POST_cat_path),
         )
         app.include_router(self.router, tags=["Aggregation Extension"])
