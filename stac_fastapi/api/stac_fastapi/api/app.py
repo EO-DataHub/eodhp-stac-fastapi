@@ -27,10 +27,11 @@ from stac_fastapi.api.models import (
     GeoJSONResponse,
     ItemCollectionUri,
     ItemUri,
+    BaseCollectionSearchGetRequest,
 )
 from stac_fastapi.api.openapi import update_openapi
 from stac_fastapi.api.routes import Scope, add_route_dependencies, create_async_endpoint
-from stac_fastapi.extensions.core.collection_search.request import BaseCollectionSearchGetRequest, BaseCollectionSearchAllGetRequest
+from stac_fastapi.extensions.core.collection_search.request import BaseCollectionSearchAllGetRequest
 from stac_fastapi.types.catalogs import Catalogs
 from stac_fastapi.types.config import ApiSettings, Settings
 from stac_fastapi.types.core import AsyncBaseCoreClient, BaseCoreClient
@@ -376,7 +377,7 @@ class StacApi:
             response_model_exclude_none=True,
             methods=["GET"],
             endpoint=create_async_endpoint(
-                self.client.all_collections, self.collections_get_all_request_model
+                self.client.all_collections, self.collections_get_request_model
             ),
         )
 

@@ -16,7 +16,7 @@ from stac_fastapi.types.config import ApiSettings
 from stac_fastapi.types.extension import ApiExtension
 
 from .client import AsyncBaseCollectionSearchClient, BaseCollectionSearchClient
-from .request import BaseCollectionSearchGetRequest, BaseCollectionSearchPostRequest
+from .request import BaseCollectionSearchAllGetRequest, BaseCollectionSearchPostRequest
 
 
 class ConformanceClasses(str, Enum):
@@ -54,7 +54,7 @@ class CollectionSearchExtension(ApiExtension):
             the extension
     """
 
-    GET: BaseCollectionSearchGetRequest = attr.ib(default=BaseCollectionSearchGetRequest)
+    GET: BaseCollectionSearchAllGetRequest = attr.ib(default=BaseCollectionSearchAllGetRequest)
     POST = None
 
     conformance_classes: List[str] = attr.ib(
@@ -104,7 +104,7 @@ class CollectionSearchExtension(ApiExtension):
 
         get_request_model = create_request_model(
             model_name="CollectionsGetRequest",
-            base_model=BaseCollectionSearchGetRequest,
+            base_model=BaseCollectionSearchAllGetRequest,
             extensions=extensions,
             request_type="GET",
         )
@@ -141,7 +141,7 @@ class CollectionSearchPostExtension(CollectionSearchExtension):
     schema_href: Optional[str] = attr.ib(default=None)
     router: APIRouter = attr.ib(factory=APIRouter)
 
-    GET: BaseCollectionSearchGetRequest = attr.ib(default=BaseCollectionSearchGetRequest)
+    GET: BaseCollectionSearchAllGetRequest = attr.ib(default=BaseCollectionSearchAllGetRequest)
     POST: BaseCollectionSearchPostRequest = attr.ib(
         default=BaseCollectionSearchPostRequest
     )
@@ -178,7 +178,7 @@ class CollectionSearchPostExtension(CollectionSearchExtension):
 
         @attr.s
         class POST_cat_path(APIRequest):
-            cat_path: Annotated[str, Path(description="Catalog path", regex=r"^(catalogs/[^/]+)(/catalogs/[^/]+)*")] = attr.ib()
+            cat_path: Annotated[str, Path(description="Catalog path", regex=r"^([^/]+)(/catalogs/[^/]+)*$")] = attr.ib()
             search_request: self.POST = attr.ib()
 
         self.router.add_api_route(
@@ -237,7 +237,7 @@ class CollectionSearchPostExtension(CollectionSearchExtension):
 
         get_request_model = create_request_model(
             model_name="CollectionsGetRequest",
-            base_model=BaseCollectionSearchGetRequest,
+            base_model=BaseCollectionSearchAllGetRequest,
             extensions=extensions,
             request_type="GET",
         )

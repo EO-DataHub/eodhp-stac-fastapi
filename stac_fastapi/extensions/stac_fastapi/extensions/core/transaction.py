@@ -11,6 +11,7 @@ from typing_extensions import Annotated
 
 from stac_fastapi.api.models import CatalogUri, CreateCatalogUri, CollectionUri, ItemUri
 from stac_fastapi.api.routes import create_async_endpoint
+from stac_fastapi.types.access_policy import AccessPolicy
 from stac_fastapi.types.config import ApiSettings
 from stac_fastapi.types.core import AsyncBaseTransactionsClient, BaseTransactionsClient
 from stac_fastapi.types.extension import ApiExtension
@@ -52,6 +53,13 @@ class PutCollection(CollectionUri):
     collection: Annotated[Collection, Body()] = attr.ib(default=None)
 
 @attr.s
+class PutCollectionAccessControl(CollectionUri):
+    """Update Collection."""
+
+    workspace: str = attr.ib()
+    access_policy: Union[AccessPolicy] = attr.ib(default=Body(None))
+
+@attr.s
 class DeleteCollection(CollectionUri):
     """Delete Collection."""
 
@@ -70,6 +78,13 @@ class PutCatalog(CatalogUri):
 
     workspace: str = attr.ib()
     catalog: Annotated[Catalog, Body()] = attr.ib(default=None)
+
+@attr.s
+class PutCatalogAccessControl(CatalogUri):
+    """Update Catalog."""
+
+    workspace: str = attr.ib()
+    access_policy: Union[AccessPolicy] = attr.ib(default=Body(None))
 
 @attr.s
 class DeleteCatalog(CatalogUri):
@@ -269,10 +284,31 @@ class TransactionExtension(ApiExtension):
         )
 
     def register_update_catalog(self):
+        """Register update catalog endpoint (PUT /collections/{collection_id})."""
+        self.router.add_api_route(
+            name="Update Catalog",
+            path="/catalogs/{cat_path:path}/catalogs/{catalog_id}",
+            response_model=Catalog if self.settings.enable_response_models else None,
+            responses={
+                200: {
+                    "content": {
+                        MimeTypes.json.value: {},
+                    },
+                    "model": Catalog,
+                }
+            },
+            response_class=self.response_class,
+            response_model_exclude_unset=True,
+            response_model_exclude_none=True,
+            methods=["PUT"],
+            endpoint=create_async_endpoint(self.client.update_catalog, PutCatalog),
+        )
+
+    def register_update_collection_access_control(self):
         """Register update collection endpoint (PUT /collections/{collection_id})."""
         self.router.add_api_route(
-            name="Update Collection",
-            path="/catalogs/{cat_path:path}/collections/{collection_id}",
+            name="Update Collection Access Policy",
+            path="/catalogs/{cat_path:path}/collections/{collection_id}/access-policy",
             response_model=Collection if self.settings.enable_response_models else None,
             responses={
                 200: {
@@ -286,7 +322,28 @@ class TransactionExtension(ApiExtension):
             response_model_exclude_unset=True,
             response_model_exclude_none=True,
             methods=["PUT"],
-            endpoint=create_async_endpoint(self.client.update_collection, PutCollection),
+            endpoint=create_async_endpoint(self.client.update_collection_access_policy, PutCollectionAccessControl),
+        )
+
+    def register_update_catalog_access_control(self):
+        """Register update catalog endpoint (PUT /collections/{collection_id})."""
+        self.router.add_api_route(
+            name="Update Catalog Access Policy",
+            path="/catalogs/{cat_path:path}/access-policy",
+            response_model=Catalog if self.settings.enable_response_models else None,
+            responses={
+                200: {
+                    "content": {
+                        MimeTypes.json.value: {},
+                    },
+                    "model": Catalog,
+                }
+            },
+            response_class=self.response_class,
+            response_model_exclude_unset=True,
+            response_model_exclude_none=True,
+            methods=["PUT"],
+            endpoint=create_async_endpoint(self.client.update_catalog_access_policy, PutCatalogAccessControl),
         )
 
     def register_delete_catalog(self):
@@ -329,8 +386,10 @@ class TransactionExtension(ApiExtension):
         self.register_delete_item()
         self.register_create_collection()
         self.register_update_collection()
+        self.register_update_collection_access_control()
         self.register_delete_collection()
         self.register_create_catalog()
         self.register_update_catalog()
+        self.register_update_catalog_access_control()
         self.register_delete_catalog()
         app.include_router(self.router, tags=["Transaction Extension"])

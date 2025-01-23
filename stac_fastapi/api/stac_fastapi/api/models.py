@@ -18,6 +18,7 @@ from stac_fastapi.types.search import (
     Limit,
     _bbox_converter,
     _datetime_converter,
+    str2list,
 )
 
 try:
@@ -111,6 +112,24 @@ class CreateCatalogUri(APIRequest):
     """Get or delete catalog."""
 
     cat_path: Annotated[str, Path(description="Catalog path", regex=r"root$|(^([^/]+)(/catalogs/[^/]+)*$)")] = attr.ib()
+
+@attr.s
+class BaseCollectionSearchGetRequest(APIRequest):
+    """Get or delete catalog."""
+
+    cat_path: Annotated[str, Path(description="Catalog path", regex=r"root$|(^([^/]+)(/catalogs/[^/]+)*$)")] = attr.ib()
+    bbox: Optional[BBox] = attr.ib(default=None, converter=_bbox_converter)
+    datetime: Optional[DateTimeType] = attr.ib(
+        default=None, converter=_datetime_converter
+    )
+    limit: Annotated[
+        Optional[Limit],
+        Query(
+            description="Limits the number of results that are included in each page of the response."  # noqa: E501
+        ),
+    ] = attr.ib(default=10)
+    q: Optional[List[str]] = attr.ib(default=None, converter=str2list)
+
 
 
 @attr.s

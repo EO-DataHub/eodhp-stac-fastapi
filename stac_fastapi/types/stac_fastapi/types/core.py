@@ -15,6 +15,7 @@ from stac_pydantic.version import STAC_VERSION
 from starlette.responses import Response
 
 from stac_fastapi.types import stac
+from stac_fastapi.types.access_policy import AccessPolicy
 from stac_fastapi.types.config import ApiSettings
 from stac_fastapi.types.conformance import BASE_CONFORMANCE_CLASSES
 from stac_fastapi.types.extension import ApiExtension
@@ -204,6 +205,44 @@ class BaseTransactionsClient(abc.ABC):
         """
         ...
 
+    @abc.abstractmethod
+    def update_collection_access_policy(
+        self, cat_path: str, collection_id: str, access_policy: AccessPolicy, workspace: str, **kwargs
+    ) -> Optional[Union[stac.Collection, Response]]:
+        """Perform an update of the access policy for a collection.
+
+        Called with `PUT /catalogs/{cat_path:path}/catalogs/collections/{collection_id}/access-policy`. It is expected that this
+        collection already exists.  The update should perform any necessary updates to the collection access-policy.  
+        Partial updates are not supported by the transactions extension.
+
+        Args:
+            collection_id: id of the existing collection to be updated
+            access_policy: the access_policy to apply to the collection.
+
+        Returns:
+            The updated collection.
+        """
+        ...
+
+    @abc.abstractmethod
+    def update_catalog_access_policy(
+        self, cat_path: str, access_policy: AccessPolicy, workspace: str, **kwargs
+    ) -> Optional[Union[stac.Collection, Response]]:
+        """Perform an update of the access policy for a catalog.
+
+        Called with `PUT /catalogs/{cat_path:path}/catalogs/{catalog_id}/access-policy`. It is expected that this
+        catalog already exists.  The update should perform any necessary updates to the catalog access-policy.  
+        Partial updates are not supported by the transactions extension.
+
+        Args:
+            cat_path: path of the existing catalog to be updated
+            access_policy: the access_policy to apply to the catalog.
+
+        Returns:
+            The updated catalog.
+        """
+        ...
+
 
 @attr.s  # type:ignore
 class AsyncBaseTransactionsClient(abc.ABC):
@@ -368,6 +407,44 @@ class AsyncBaseTransactionsClient(abc.ABC):
 
         Returns:
             The deleted catalog.
+        """
+        ...
+
+    @abc.abstractmethod
+    def update_collection_access_policy(
+        self, cat_path: str, collection_id: str, access_policy: AccessPolicy, workspace: str, **kwargs
+    ) -> Optional[Union[stac.Collection, Response]]:
+        """Perform an update of the access policy for a collection.
+
+        Called with `PUT /catalogs/{cat_path:path}/catalogs/collections/{collection_id}/access-policy`. It is expected that this
+        collection already exists.  The update should perform any necessary updates to the collection access-policy.  
+        Partial updates are not supported by the transactions extension.
+
+        Args:
+            collection_id: id of the existing collection to be updated
+            access_policy: the access_policy to apply to the collection.
+
+        Returns:
+            The updated collection.
+        """
+        ...
+
+    @abc.abstractmethod
+    def update_catalog_access_policy(
+        self, cat_path: str, access_policy: AccessPolicy, workspace: str, **kwargs
+    ) -> Optional[Union[stac.Collection, Response]]:
+        """Perform an update of the access policy for a catalog.
+
+        Called with `PUT /catalogs/{cat_path:path}/catalogs/{catalog_id}/access-policy`. It is expected that this
+        catalog already exists.  The update should perform any necessary updates to the catalog access-policy.  
+        Partial updates are not supported by the transactions extension.
+
+        Args:
+            cat_path: path of the existing catalog to be updated
+            access_policy: the access_policy to apply to the catalog.
+
+        Returns:
+            The updated catalog.
         """
         ...
 
