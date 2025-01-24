@@ -115,8 +115,8 @@ def extract_headers(
         headers["X-Authenticated"] = True
     else:
         logger.info("User is not authenticated")
-        headers["X-Workspaces"] = ["tjellicoe-tpzuk"]
-        headers["X-Authenticated"] = True
+        headers["X-Workspaces"] = []
+        headers["X-Authenticated"] = False
 
     return headers  # Allows support for more headers in future, e.g. group information
 
