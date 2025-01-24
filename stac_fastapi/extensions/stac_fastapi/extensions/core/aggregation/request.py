@@ -8,7 +8,7 @@ from pydantic import Field
 from typing_extensions import Annotated
 
 from stac_fastapi.types.search import (
-    BaseSearchGetRequest,
+    BaseSearchAllGetRequest,
     BaseSearchPostRequest,
     str2list,
 )
@@ -25,7 +25,7 @@ def _agg_converter(
 
 
 @attr.s
-class AggregationExtensionGetRequest(BaseSearchGetRequest):
+class AggregationExtensionGetRequest(BaseSearchAllGetRequest):
     """Aggregation Extension GET request model."""
 
     aggregations: Optional[List[str]] = attr.ib(default=None, converter=_agg_converter)
@@ -43,8 +43,6 @@ class TempAggregationExtensionPostRequest(BaseSearchPostRequest):
 class AggregationExtensionPostRequest(BaseSearchPostRequest):
     """Aggregation Extension POST request model."""
 
-    #cat_path: Annotated[str, Path(description="Catalog path", regex=r"^(catalogs/[^/]+)(/catalogs/[^/]+)*")] = attr.ib()
-    # request_body: TempAggregationExtensionPostRequest = Body(...)
     aggregations: Optional[List[str]] = Field(
         default=None,
         description="A list of aggregations to compute and return.",

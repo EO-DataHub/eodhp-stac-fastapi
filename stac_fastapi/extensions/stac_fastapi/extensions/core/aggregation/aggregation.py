@@ -97,17 +97,19 @@ class AggregationExtension(ApiExtension):
             methods=["POST"],
             endpoint=create_async_endpoint(self.client.aggregate, self.POST),
         )
+
+        @attr.s
+        class GET_cat_path(CollectionUri, self.GET):
+            pass
+
         self.router.add_api_route(
             name="Collection Aggregate",
             path="/catalogs/{cat_path:path}/collections/{collection_id}/aggregate",
             methods=["GET"],
-            endpoint=create_async_endpoint(self.client.aggregate, self.GET),
+            endpoint=create_async_endpoint(self.client.aggregate, GET_cat_path),
         )
 
-        @attr.s
-        class POST_cat_path(APIRequest):
-            cat_path: Annotated[str, Path(description="Catalog path", regex=r"^(catalogs/[^/]+)(/catalogs/[^/]+)*")] = attr.ib()
-            collection_id: Annotated[str, Path(description="Collection ID")] = attr.ib()
+        class POST_cat_path(CollectionUri):
             search_request: self.POST = attr.ib()
             
         self.router.add_api_route(

@@ -747,7 +747,7 @@ class BaseCoreClient(LandingPageMixin, abc.ABC):
         ...
 
     @abc.abstractmethod
-    def get_catalog(self, cat_path: str, **kwargs) -> stac.Catalog:
+    def get_catalog(self, cat_path: str, catalog_id: str, **kwargs) -> stac.Catalog:
         """Get catalog by id.
 
         Called with `GET /catalogs/{cat_path}`.
@@ -1009,7 +1009,7 @@ class AsyncBaseCoreClient(LandingPageMixin, abc.ABC):
         ...
 
     @abc.abstractmethod
-    def get_catalog(self, cat_path: str, **kwargs) -> stac.Catalog:
+    def get_catalog(self, cat_path: str, catalog_id: str, **kwargs) -> stac.Catalog:
         """Get catalog by id.
 
         Called with `GET /catalogs/{cat_path}`.
