@@ -108,6 +108,20 @@ class CatalogUri(APIRequest):
     cat_path: Annotated[str, Path(description="Catalog path", regex=r"^([^/]+)(/catalogs/[^/]+)*$")] = attr.ib()
 
 @attr.s
+class BaseCatalogUri(APIRequest):
+    """Get or delete catalog."""
+
+    catalog_id: Annotated[str, Path(description="Catalog ID", regex=r"^([^/]+)$")] = attr.ib()
+
+
+@attr.s
+class GetCatalogUri(APIRequest):
+    """Get or delete catalog."""
+
+    cat_path: Annotated[str, Path(description="Catalog path", regex=r"^([^/]+)(/catalogs/[^/]+)*$")] = attr.ib()
+    catalog_id: Annotated[str, Path(description="Catalog ID", regex=r"^([^/]+)$")] = attr.ib()
+
+@attr.s
 class CreateCatalogUri(APIRequest):
     """Get or delete catalog."""
 
