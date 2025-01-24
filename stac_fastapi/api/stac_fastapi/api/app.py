@@ -21,6 +21,8 @@ from stac_fastapi.api.errors import DEFAULT_STATUS_CODES, add_exception_handlers
 from stac_fastapi.api.middleware import CORSMiddleware, ProxyHeaderMiddleware
 from stac_fastapi.api.models import (
     APIRequest,
+    BaseCatalogUri,
+    GetCatalogUri,
     CatalogUri,
     CollectionUri,
     EmptyRequest,
@@ -117,7 +119,8 @@ class StacApi:
     )
     catalogs_get_all_request_model: Type[APIRequest] = attr.ib(default=EmptyRequest)
     catalogs_get_request_model: Type[APIRequest] = attr.ib(default=CatalogUri)
-    catalog_get_request_model: Type[APIRequest] = attr.ib(default=CatalogUri)
+    catalog_get_request_model: Type[APIRequest] = attr.ib(default=GetCatalogUri)
+    base_catalog_get_request_model: Type[APIRequest] = attr.ib(default=BaseCatalogUri)
     collections_get_all_request_model: Type[APIRequest] = attr.ib(default=BaseCollectionSearchAllGetRequest)
     collections_get_request_model: Type[APIRequest] = attr.ib(default=BaseCollectionSearchGetRequest)
     collection_get_request_model: Type[APIRequest] = attr.ib(default=CollectionUri)
@@ -564,7 +567,7 @@ class StacApi:
         """
         self.router.add_api_route(
             name="Get Catalog",
-            path="/catalogs/{cat_path:path}",
+            path="/catalogs/{cat_path:path}/catalogs/{catalog_id}",
             response_model=api.Collection
             if self.settings.enable_response_models
             else None,
@@ -582,6 +585,35 @@ class StacApi:
             methods=["GET"],
             endpoint=create_async_endpoint(
                 self.client.get_catalog, self.catalog_get_request_model
+            ),
+        )
+
+    def register_get_base_catalog(self):
+        """Register get catalog endpoint (GET /catalog/{cat_path}).
+
+        Returns:
+            None
+        """
+        self.router.add_api_route(
+            name="Get Base Catalog",
+            path="/catalogs/{catalog_id}",
+            response_model=api.Collection
+            if self.settings.enable_response_models
+            else None,
+            responses={
+                200: {
+                    "content": {
+                        MimeTypes.json.value: {},
+                    },
+                    "model": api.Collection,
+                },
+            },
+            response_class=self.response_class,
+            response_model_exclude_unset=True,
+            response_model_exclude_none=True,
+            methods=["GET"],
+            endpoint=create_async_endpoint(
+                self.client.get_catalog, self.base_catalog_get_request_model
             ),
         )
 
@@ -645,6 +677,7 @@ class StacApi:
         self.register_get_catalogs()
         self.register_get_all_catalogs()
         self.register_get_catalog()
+        self.register_get_base_catalog()
 
     def customize_openapi(self) -> Optional[Dict[str, Any]]:
         """Customize openapi schema."""
