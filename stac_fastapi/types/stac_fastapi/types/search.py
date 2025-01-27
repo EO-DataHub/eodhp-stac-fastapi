@@ -120,7 +120,7 @@ class APIRequest:
 class BaseSearchGetRequest(APIRequest):
     """Base arguments for GET Request."""
 
-    cat_path: Annotated[str, Path(description="Catalog path", regex=r"^(catalogs/[^/]+)(/catalogs/[^/]+)*")] = attr.ib()
+    cat_path: Annotated[str, Path(description="Catalog path", regex=r"^([^/]+)(/catalogs/[^/]+)*$")] = attr.ib()
     collections: Optional[List[str]] = attr.ib(
         default=None, converter=_collection_converter
     )
