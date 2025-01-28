@@ -50,6 +50,7 @@ class Collection(Catalog, total=False):
     extent: Dict[str, Any]
     summaries: Dict[str, Any]
     assets: Dict[str, Any]
+    renders: Dict[str, Any]
 
 
 class Item(TypedDict, total=False):
