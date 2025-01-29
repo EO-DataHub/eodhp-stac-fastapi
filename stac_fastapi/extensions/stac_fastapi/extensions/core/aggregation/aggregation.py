@@ -81,7 +81,7 @@ class AggregationExtension(ApiExtension):
         )
         self.router.add_api_route(
             name="Sub Aggregations",
-            path="/{cat_path:path}/aggregations",
+            path="catalogs/{cat_path:path}/aggregations",
             methods=["GET", "POST"],
             endpoint=create_async_endpoint(self.client.get_aggregations, CatalogUri),
         )
@@ -104,7 +104,7 @@ class AggregationExtension(ApiExtension):
 
         self.router.add_api_route(
             name="Sub Aggregate",
-            path="/{cat_path:path}/aggregate",
+            path="catalogs/{cat_path:path}/aggregate",
             methods=["GET"],
             endpoint=create_async_endpoint(self.client.aggregate, GET_cat_path),
         )
