@@ -123,19 +123,4 @@ class FilterExtension(ApiExtension):
             response_class=self.response_class,
             endpoint=create_async_endpoint(self.client.get_queryables, CollectionUri),
         )
-        self.router.add_api_route(
-            name="Catalog Queryables",
-            path="/catalogs/{cat_path:path}/queryables",
-            methods=["GET"],
-            responses={
-                200: {
-                    "content": {
-                        "application/schema+json": {},
-                    },
-                    # TODO: add output model in stac-pydantic
-                },
-            },
-            response_class=self.response_class,
-            endpoint=create_async_endpoint(self.client.get_queryables, CatalogUri),
-        )
         app.include_router(self.router, tags=["Filter Extension"])
