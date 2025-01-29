@@ -110,7 +110,7 @@ class FilterExtension(ApiExtension):
         )
         self.router.add_api_route(
             name="Collection Queryables",
-            path="catalogs/{cat_path:path}/collections/{collection_id}/queryables",
+            path="/catalogs/{cat_path:path}/collections/{collection_id}/queryables",
             methods=["GET"],
             responses={
                 200: {
@@ -125,7 +125,7 @@ class FilterExtension(ApiExtension):
         )
         self.router.add_api_route(
             name="Catalog Queryables",
-            path="catalogs/{cat_path:path}/queryables",
+            path="/catalogs/{cat_path:path}/queryables",
             methods=["GET"],
             responses={
                 200: {
