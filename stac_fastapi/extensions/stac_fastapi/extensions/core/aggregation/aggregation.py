@@ -79,18 +79,42 @@ class AggregationExtension(ApiExtension):
             methods=["GET", "POST"],
             endpoint=create_async_endpoint(self.client.get_aggregations, EmptyRequest),
         )
+
+        @attr.s
+        class GET_cat_path_collection(CollectionUri, self.GET):
+            pass
+
         self.router.add_api_route(
-            name="Catalog Aggregations",
-            path="/catalogs/{cat_path:path}/aggregations",
-            methods=["GET", "POST"],
-            endpoint=create_async_endpoint(self.client.get_aggregations, CatalogUri),
+            name="Collection Aggregate",
+            path="/catalogs/{cat_path:path}/collections/{collection_id}/aggregate",
+            methods=["GET"],
+            endpoint=create_async_endpoint(self.client.aggregate, GET_cat_path_collection),
         )
+
+        class POST_cat_path(CollectionUri):
+            search_request: self.POST = attr.ib()
+            
+        self.router.add_api_route(
+            name="Collection Aggregate",
+            path="/catalogs/{cat_path:path}/collections/{collection_id}/aggregate",
+            methods=["POST"],
+            endpoint=create_async_endpoint(self.client.aggregate, POST_cat_path),
+        )
+
         self.router.add_api_route(
             name="Collection Aggregations",
             path="/catalogs/{cat_path:path}/collections/{collection_id}/aggregations",
             methods=["GET", "POST"],
             endpoint=create_async_endpoint(self.client.get_aggregations, CollectionUri),
         )
+
+        self.router.add_api_route(
+            name="Catalog Aggregations",
+            path="/catalogs/{cat_path:path}/aggregations",
+            methods=["GET", "POST"],
+            endpoint=create_async_endpoint(self.client.get_aggregations, CatalogUri),
+        )
+        
         self.router.add_api_route(
             name="Aggregate",
             path="/aggregate",
@@ -115,24 +139,4 @@ class AggregationExtension(ApiExtension):
             endpoint=create_async_endpoint(self.client.aggregate, self.POST),
         )
 
-        @attr.s
-        class GET_cat_path_collection(CollectionUri, self.GET):
-            pass
-
-        self.router.add_api_route(
-            name="Collection Aggregate",
-            path="/catalogs/{cat_path:path}/collections/{collection_id}/aggregate",
-            methods=["GET"],
-            endpoint=create_async_endpoint(self.client.aggregate, GET_cat_path_collection),
-        )
-
-        class POST_cat_path(CollectionUri):
-            search_request: self.POST = attr.ib()
-            
-        self.router.add_api_route(
-            name="Collection Aggregate",
-            path="/catalogs/{cat_path:path}/collections/{collection_id}/aggregate",
-            methods=["POST"],
-            endpoint=create_async_endpoint(self.client.aggregate, POST_cat_path),
-        )
         app.include_router(self.router, tags=["Aggregation Extension"])
