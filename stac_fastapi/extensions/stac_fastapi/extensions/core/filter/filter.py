@@ -7,7 +7,7 @@ import attr
 from fastapi import APIRouter, FastAPI
 from starlette.responses import Response
 
-from stac_fastapi.api.models import CollectionUri, EmptyRequest, JSONSchemaResponse
+from stac_fastapi.api.models import CatalogUri, CollectionUri, EmptyRequest, JSONSchemaResponse
 from stac_fastapi.api.routes import create_async_endpoint
 from stac_fastapi.types.extension import ApiExtension
 
@@ -122,5 +122,20 @@ class FilterExtension(ApiExtension):
             },
             response_class=self.response_class,
             endpoint=create_async_endpoint(self.client.get_queryables, CollectionUri),
+        )
+        self.router.add_api_route(
+            name="Catalog Queryables",
+            path="catalogs/{cat_path:path}/queryables",
+            methods=["GET"],
+            responses={
+                200: {
+                    "content": {
+                        "application/schema+json": {},
+                    },
+                    # TODO: add output model in stac-pydantic
+                },
+            },
+            response_class=self.response_class,
+            endpoint=create_async_endpoint(self.client.get_queryables, CatalogUri),
         )
         app.include_router(self.router, tags=["Filter Extension"])
