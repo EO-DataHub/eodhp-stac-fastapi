@@ -472,35 +472,6 @@ class StacApi:
             ),
         )
 
-    def register_get_catalogs(self):
-        """Register get catalogs endpoint (GET /catalogs).
-
-        Returns:
-            None
-        """
-        self.router.add_api_route(
-            name="Get Catalogs",
-            path="/catalogs/{cat_path:path}/catalogs",
-            response_model=(
-                Catalogs if self.settings.enable_response_models else None
-            ),
-            responses={
-                200: {
-                    "content": {
-                        MimeTypes.json.value: {},
-                    },
-                    "model": Catalogs,
-                },
-            },
-            response_class=self.response_class,
-            response_model_exclude_unset=True,
-            response_model_exclude_none=True,
-            methods=["GET"],
-            endpoint=create_async_endpoint(
-                self.client.all_catalogs, self.catalogs_get_request_model
-            ),
-        )
-
     def register_get_all_catalogs(self):
         """Register get catalogs endpoint (GET /catalogs).
 
