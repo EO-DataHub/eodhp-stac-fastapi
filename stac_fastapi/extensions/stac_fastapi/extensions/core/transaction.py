@@ -73,7 +73,7 @@ class PostCatalog(CreateCatalogUri):
     catalog: Annotated[Catalog, Body()] = attr.ib(default=None)
 
 @attr.s
-class PutCatalog(GetCatalogUri):
+class PutCatalog(CatalogUri):
     """Update Catalog."""
 
     workspace: str = attr.ib()
@@ -294,7 +294,7 @@ class TransactionExtension(ApiExtension):
         """Register update catalog endpoint (PUT /collections/{collection_id})."""
         self.router.add_api_route(
             name="Update Catalog",
-            path="/catalogs/{cat_path:path}/catalogs/{catalog_id}",
+            path="/catalogs/{cat_path:path}",
             response_model=Catalog if self.settings.enable_response_models else None,
             responses={
                 200: {
@@ -311,26 +311,6 @@ class TransactionExtension(ApiExtension):
             endpoint=create_async_endpoint(self.client.update_catalog, PutCatalog),
         )
 
-    def register_update_base_catalog(self):
-        """Register update catalog endpoint (PUT /collections/{collection_id})."""
-        self.router.add_api_route(
-            name="Update Base Catalog",
-            path="/catalogs/{catalog_id}",
-            response_model=Catalog if self.settings.enable_response_models else None,
-            responses={
-                200: {
-                    "content": {
-                        MimeTypes.json.value: {},
-                    },
-                    "model": Catalog,
-                }
-            },
-            response_class=self.response_class,
-            response_model_exclude_unset=True,
-            response_model_exclude_none=True,
-            methods=["PUT"],
-            endpoint=create_async_endpoint(self.client.update_catalog, PutBaseCatalog),
-        )
 
     def register_update_collection_access_control(self):
         """Register update collection endpoint (PUT /collections/{collection_id})."""
@@ -418,7 +398,6 @@ class TransactionExtension(ApiExtension):
         self.register_delete_collection()
         self.register_create_catalog()
         self.register_update_catalog()
-        self.register_update_base_catalog()
         self.register_update_catalog_access_control()
         self.register_delete_catalog()
         app.include_router(self.router, tags=["Transaction Extension"])
