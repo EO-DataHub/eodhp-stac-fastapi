@@ -80,13 +80,6 @@ class PutCatalog(CatalogUri):
     catalog: Annotated[Catalog, Body()] = attr.ib(default=None)
 
 @attr.s
-class PutBaseCatalog(BaseCatalogUri):
-    """Update Catalog."""
-
-    workspace: str = attr.ib()
-    catalog: Annotated[Catalog, Body()] = attr.ib(default=None)
-
-@attr.s
 class PutCatalogAccessControl(CatalogUri):
     """Update Catalog."""
 
