@@ -9,7 +9,7 @@ from stac_pydantic.shared import MimeTypes
 from starlette.responses import JSONResponse, Response
 from typing_extensions import Annotated
 
-from stac_fastapi.api.models import CatalogUri, GetCatalogUri, CreateCatalogUri, CollectionUri, ItemUri
+from stac_fastapi.api.models import CatalogUri, GetCatalogUri, BaseCatalogUri, CreateCatalogUri, CollectionUri, ItemUri
 from stac_fastapi.api.routes import create_async_endpoint
 from stac_fastapi.types.access_policy import AccessPolicy
 from stac_fastapi.types.config import ApiSettings
@@ -74,6 +74,13 @@ class PostCatalog(CreateCatalogUri):
 
 @attr.s
 class PutCatalog(GetCatalogUri):
+    """Update Catalog."""
+
+    workspace: str = attr.ib()
+    catalog: Annotated[Catalog, Body()] = attr.ib(default=None)
+
+@attr.s
+class PutBaseCatalog(BaseCatalogUri):
     """Update Catalog."""
 
     workspace: str = attr.ib()
@@ -304,6 +311,27 @@ class TransactionExtension(ApiExtension):
             endpoint=create_async_endpoint(self.client.update_catalog, PutCatalog),
         )
 
+    def register_update_base_catalog(self):
+        """Register update catalog endpoint (PUT /collections/{collection_id})."""
+        self.router.add_api_route(
+            name="Update Base Catalog",
+            path="/catalogs/{catalog_id}",
+            response_model=Catalog if self.settings.enable_response_models else None,
+            responses={
+                200: {
+                    "content": {
+                        MimeTypes.json.value: {},
+                    },
+                    "model": Catalog,
+                }
+            },
+            response_class=self.response_class,
+            response_model_exclude_unset=True,
+            response_model_exclude_none=True,
+            methods=["PUT"],
+            endpoint=create_async_endpoint(self.client.update_catalog, PutBaseCatalog),
+        )
+
     def register_update_collection_access_control(self):
         """Register update collection endpoint (PUT /collections/{collection_id})."""
         self.router.add_api_route(
@@ -390,6 +418,7 @@ class TransactionExtension(ApiExtension):
         self.register_delete_collection()
         self.register_create_catalog()
         self.register_update_catalog()
+        self.register_update_base_catalog()
         self.register_update_catalog_access_control()
         self.register_delete_catalog()
         app.include_router(self.router, tags=["Transaction Extension"])
