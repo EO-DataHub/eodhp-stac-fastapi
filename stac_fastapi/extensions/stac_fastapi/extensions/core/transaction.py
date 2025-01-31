@@ -9,7 +9,7 @@ from stac_pydantic.shared import MimeTypes
 from starlette.responses import JSONResponse, Response
 from typing_extensions import Annotated
 
-from stac_fastapi.api.models import CatalogUri, CreateCatalogUri, CollectionUri, ItemUri
+from stac_fastapi.api.models import CatalogUri, GetCatalogUri, CreateCatalogUri, CollectionUri, ItemUri
 from stac_fastapi.api.routes import create_async_endpoint
 from stac_fastapi.types.access_policy import AccessPolicy
 from stac_fastapi.types.config import ApiSettings
@@ -73,7 +73,7 @@ class PostCatalog(CreateCatalogUri):
     catalog: Annotated[Catalog, Body()] = attr.ib(default=None)
 
 @attr.s
-class PutCatalog(CatalogUri):
+class PutCatalog(GetCatalogUri):
     """Update Catalog."""
 
     workspace: str = attr.ib()
