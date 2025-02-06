@@ -54,7 +54,6 @@ class BaseCollectionSearchPostRequest(BaseModel):
     # Not part of the model schema.
     _start_date: Optional[dt] = None
     _end_date: Optional[dt] = None
-    filter: Optional[Union[str, Dict[str, Any]]]
 
     # Properties to return the private values
     @property
