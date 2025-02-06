@@ -21,7 +21,7 @@ class BaseAggregationClient(abc.ABC):
     # AGGREGATION_COLLECTION = AggregationCollection
 
     def get_aggregations(
-        self, collection_id: Optional[str] = None, **kwargs
+        self, cat_path: Optional[str] = None, collection_id: Optional[str] = None, **kwargs
     ) -> AggregationCollection:
         """Get the aggregations available for the given collection_id.
 
@@ -46,7 +46,7 @@ class BaseAggregationClient(abc.ABC):
         )
 
     def aggregate(
-        self, collection_id: Optional[str] = None, **kwargs
+        self, cat_path: Optional[str] = None, collection_id: Optional[str] = None, **kwargs
     ) -> AggregationCollection:
         """Return the aggregation buckets for a given search result"""
         return AggregationCollection(
@@ -76,7 +76,7 @@ class AsyncBaseAggregationClient(abc.ABC):
     # AGGREGATION_COLLECTION = AggregationCollection
 
     async def get_aggregations(
-        self, collection_id: Optional[str] = None, **kwargs
+        self, cat_path: Optional[str] = None, collection_id: Optional[str] = None, **kwargs
     ) -> AggregationCollection:
         """Get the aggregations available for the given collection_id.
 
@@ -102,6 +102,7 @@ class AsyncBaseAggregationClient(abc.ABC):
 
     async def aggregate(
         self,
+        cat_path: Optional[str] = None,
         collection_id: Optional[str] = None,
         aggregations: Optional[Union[str, List[str]]] = None,
         collections: Optional[List[str]] = None,

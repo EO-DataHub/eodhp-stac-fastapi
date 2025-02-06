@@ -50,6 +50,7 @@ class Collection(Catalog, total=False):
     extent: Dict[str, Any]
     summaries: Dict[str, Any]
     assets: Dict[str, Any]
+    renders: Dict[str, Any]
 
 
 class Item(TypedDict, total=False):
@@ -83,6 +84,17 @@ class Collections(TypedDict, total=False):
     """
 
     collections: List[Collection]
+    links: List[Dict[str, Any]]
+    numberMatched: Optional[int] = None
+    numberReturned: Optional[int] = None
+
+
+class Catalogs(TypedDict, total=False):
+    """All catalogs endpoint.
+    https://github.com/radiantearth/stac-api-spec/tree/master/catalogs
+    """
+
+    catalogs: List[Catalog]
     links: List[Dict[str, Any]]
     numberMatched: Optional[int] = None
     numberReturned: Optional[int] = None

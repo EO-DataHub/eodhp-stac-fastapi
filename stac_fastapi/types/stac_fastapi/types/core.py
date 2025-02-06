@@ -1,23 +1,26 @@
 """Base clients."""
 
 import abc
+import warnings
 from typing import Any, Dict, List, Optional, Union
 from urllib.parse import urljoin
 
 import attr
 from fastapi import Request
 from geojson_pydantic.geometries import Geometry
-from stac_pydantic import Collection, Item, ItemCollection
+from stac_pydantic import Catalog, Collection, Item, ItemCollection
 from stac_pydantic.links import Relations
 from stac_pydantic.shared import BBox, MimeTypes
 from stac_pydantic.version import STAC_VERSION
 from starlette.responses import Response
 
 from stac_fastapi.types import stac
+from stac_fastapi.types.access_policy import AccessPolicy
 from stac_fastapi.types.config import ApiSettings
 from stac_fastapi.types.conformance import BASE_CONFORMANCE_CLASSES
 from stac_fastapi.types.extension import ApiExtension
 from stac_fastapi.types.requests import get_base_url
+from stac_fastapi.types.rfc3339 import DateTimeType
 from stac_fastapi.types.search import BaseSearchPostRequest
 
 __all__ = [
@@ -43,6 +46,7 @@ class BaseTransactionsClient(abc.ABC):
     @abc.abstractmethod
     def create_item(
         self,
+        cat_path: str,
         collection_id: str,
         item: Union[Item, ItemCollection],
         **kwargs,
@@ -62,18 +66,20 @@ class BaseTransactionsClient(abc.ABC):
 
     @abc.abstractmethod
     def update_item(
-        self, collection_id: str, item_id: str, item: Item, **kwargs
+        self, cat_path: str, collection_id: str, item_id: str, item: Item, workspace: str, **kwargs
     ) -> Optional[Union[stac.Item, Response]]:
         """Perform a complete update on an existing item.
 
-        Called with `PUT /collections/{collection_id}/items`. It is expected
+        Called with `PUT /catalogs/{cat_path}/collections/{collection_id}/items`. It is expected
         that this item already exists.  The update should do a diff against the
         saved item and perform any necessary updates.  Partial updates are not
         supported by the transactions extension.
 
         Args:
+            cat_path: path of the existing catalog containing the parent collection
             item: the item (must be complete)
             collection_id: the id of the collection from the resource path
+            workspace: the requesting workspace.
 
         Returns:
             The updated item.
@@ -82,15 +88,17 @@ class BaseTransactionsClient(abc.ABC):
 
     @abc.abstractmethod
     def delete_item(
-        self, item_id: str, collection_id: str, **kwargs
+        self, cat_path: str, item_id: str, collection_id: str, workspace: str, **kwargs
     ) -> Optional[Union[stac.Item, Response]]:
         """Delete an item from a collection.
 
-        Called with `DELETE /collections/{collection_id}/items/{item_id}`
+        Called with `DELETE /catalogs/{cat_path}/collections/{collection_id}/items/{item_id}`
 
         Args:
+            cat_path: path of the existing catalog containing the parent collection.
             item_id: id of the item.
             collection_id: id of the collection.
+            workspace: the requesting workspace.
 
         Returns:
             The deleted item.
@@ -99,14 +107,16 @@ class BaseTransactionsClient(abc.ABC):
 
     @abc.abstractmethod
     def create_collection(
-        self, collection: Collection, **kwargs
+        self, cat_path: str, collection: Collection, workspace: str, **kwargs
     ) -> Optional[Union[stac.Collection, Response]]:
         """Create a new collection.
 
-        Called with `POST /collections`.
+        Called with `POST /catalogs/{cat_path}/collections`.
 
         Args:
+            cat_path: path of the existing catalog containing the collection
             collection: the collection
+            workspace: the requesting workspace
 
         Returns:
             The collection that was created.
@@ -115,18 +125,20 @@ class BaseTransactionsClient(abc.ABC):
 
     @abc.abstractmethod
     def update_collection(
-        self, collection_id: str, collection: Collection, **kwargs
+        self, cat_path: str, collection_id: str, collection: Collection, workspace: str, **kwargs
     ) -> Optional[Union[stac.Collection, Response]]:
         """Perform a complete update on an existing collection.
 
-        Called with `PUT /collections/{collection_id}`. It is expected that this
+        Called with `PUT /catalogs/{cat_path}/collections/{collection_id}`. It is expected that this
         collection already exists.  The update should do a diff against the saved
         collection and perform any necessary updates.  Partial updates are not
         supported by the transactions extension.
 
         Args:
+            cat_path: path of the existing catalog containing the collection
             collection_id: id of the existing collection to be updated
             collection: the updated collection (must be complete)
+            workspace: the requesting workspace
 
         Returns:
             The updated collection.
@@ -135,17 +147,117 @@ class BaseTransactionsClient(abc.ABC):
 
     @abc.abstractmethod
     def delete_collection(
-        self, collection_id: str, **kwargs
+        self, cat_path: str, collection_id: str, workspace: str, **kwargs
     ) -> Optional[Union[stac.Collection, Response]]:
         """Delete a collection.
 
-        Called with `DELETE /collections/{collection_id}`
+        Called with `DELETE /catalogs/{cat_path}/collections/{collection_id}`
 
         Args:
+            cat_path: path of the existing catalog containing the collection
             collection_id: id of the collection.
+            workspace: the requesting workspace.
 
         Returns:
             The deleted collection.
+        """
+        ...
+
+    @abc.abstractmethod
+    def create_catalog(
+        self, catalog: Catalog, cat_path: str, workspace: str, **kwargs
+    ) -> Optional[Union[stac.Catalog, Response]]:
+        """Create a new catalog.
+
+        Called with `POST /catalogs/{cat_path}/catalogs`.
+
+        Args:
+            catalog: the catalog
+            cat_path: path of the existing catalog containing the catalog, can be "root" for top-level catalogs
+            workspace: the requesting workspace.
+
+        Returns:
+            The catalog that was created.
+        """
+        ...
+
+    @abc.abstractmethod
+    def update_catalog(
+        self, cat_path: str, catalog: Catalog, workspace: str, **kwargs
+    ) -> Optional[Union[stac.Catalog, Response]]:
+        """Perform a complete update on an existing catalog.
+
+        Called with `PUT /catalogs/{cat_path}`. It is expected that this
+        catalog already exists.  The update should do a diff against the saved
+        catalog and perform any necessary updates.  Partial updates are not
+        supported by the transactions extension.
+
+        Args:
+            cat_path: path of the existing catalog containing the catalog
+            catalog_id: id of the existing catalog to be updated
+            catalog: the updated catalog (must be complete)
+            workspace: the requesting workspace.
+
+        Returns:
+            The updated catalog.
+        """
+        ...
+
+    @abc.abstractmethod
+    def delete_catalog(
+        self, cat_path: str, workspace: str, **kwargs
+    ) -> Optional[Union[stac.Catalog, Response]]:
+        """Delete a catalog.
+
+        Called with `DELETE /catalogs/{cat_path}`
+
+        Args:
+            cat_path: path of the catalog.
+            workspace: the requesting workspace.
+
+        Returns:
+            The deleted catalog.
+        """
+        ...
+
+    @abc.abstractmethod
+    def update_collection_access_policy(
+        self, cat_path: str, collection_id: str, access_policy: AccessPolicy, workspace: str, **kwargs
+    ) -> Optional[Union[stac.Collection, Response]]:
+        """Perform an update of the access policy for a collection.
+
+        Called with `PUT /catalogs/{cat_path}/catalogs/collections/{collection_id}/access-policy`. It is expected that this
+        collection already exists.  The update should perform any necessary updates to the collection access-policy.  
+        Partial updates are not supported by the transactions extension.
+
+        Args:
+            cat_path: path of the existing catalog containing the collection
+            collection_id: id of the existing collection to be updated
+            access_policy: the access_policy to apply to the collection.
+            workspace: the requesting workspace.
+
+        Returns:
+            The updated collection.
+        """
+        ...
+
+    @abc.abstractmethod
+    def update_catalog_access_policy(
+        self, cat_path: str, access_policy: AccessPolicy, workspace: str, **kwargs
+    ) -> Optional[Union[stac.Collection, Response]]:
+        """Perform an update of the access policy for a catalog.
+
+        Called with `PUT /catalogs/{cat_path}/catalogs/{catalog_id}/access-policy`. It is expected that this
+        catalog already exists.  The update should perform any necessary updates to the catalog access-policy.  
+        Partial updates are not supported by the transactions extension.
+
+        Args:
+            cat_path: path of the existing catalog to be updated
+            access_policy: the access_policy to apply to the catalog.
+            workspace: the requesting workspace.
+
+        Returns:
+            The updated catalog.
         """
         ...
 
@@ -157,17 +269,21 @@ class AsyncBaseTransactionsClient(abc.ABC):
     @abc.abstractmethod
     async def create_item(
         self,
+        cat_path: str,
         collection_id: str,
         item: Union[Item, ItemCollection],
+        workspace: str,
         **kwargs,
     ) -> Optional[Union[stac.Item, Response, None]]:
         """Create a new item.
 
-        Called with `POST /collections/{collection_id}/items`.
+        Called with `POST /catalogs/{cat_path}/collections/{collection_id}/items`.
 
         Args:
+            cat_path: path of the existing catalog containing the parent collection
             item: the item or item collection
             collection_id: the id of the collection from the resource path
+            workspace: the requesting workspace.
 
         Returns:
             The item that was created or None if item collection.
@@ -176,17 +292,21 @@ class AsyncBaseTransactionsClient(abc.ABC):
 
     @abc.abstractmethod
     async def update_item(
-        self, collection_id: str, item_id: str, item: Item, **kwargs
+        self, cat_path: str, collection_id: str, item_id: str, item: Item, workspace: str, **kwargs
     ) -> Optional[Union[stac.Item, Response]]:
         """Perform a complete update on an existing item.
 
-        Called with `PUT /collections/{collection_id}/items`. It is expected
+        Called with `PUT /catalogs/{cat_path}/collections/{collection_id}/items`. It is expected
         that this item already exists.  The update should do a diff against the
-        saved item and perform any necessary updates.  Partial updates are not
+        saved item and perform any necessary updates. Partial updates are not
         supported by the transactions extension.
 
         Args:
+            cat_path: path of the existing catalog containing the parent collection
+            collection_id: the id of the collection from the resource path
+            item_id: id of the existing item to be updated
             item: the item (must be complete)
+            workspace: the requesting workspace.
 
         Returns:
             The updated item.
@@ -195,15 +315,17 @@ class AsyncBaseTransactionsClient(abc.ABC):
 
     @abc.abstractmethod
     async def delete_item(
-        self, item_id: str, collection_id: str, **kwargs
+        self, cat_path: str, item_id: str, collection_id: str, workspace: str, **kwargs
     ) -> Optional[Union[stac.Item, Response]]:
         """Delete an item from a collection.
 
-        Called with `DELETE /collections/{collection_id}/items/{item_id}`
+        Called with `DELETE /catalogs/{cat_path}/collections/{collection_id}/items/{item_id}`
 
         Args:
+            cat_path: path of the existing catalog containing the parent collection
             item_id: id of the item.
             collection_id: id of the collection.
+            workspace: the requesting workspace.
 
         Returns:
             The deleted item.
@@ -212,14 +334,16 @@ class AsyncBaseTransactionsClient(abc.ABC):
 
     @abc.abstractmethod
     async def create_collection(
-        self, collection: Collection, **kwargs
+        self, cat_path: str, collection: Collection, workspace: str, **kwargs
     ) -> Optional[Union[stac.Collection, Response]]:
         """Create a new collection.
 
-        Called with `POST /collections`.
+        Called with `POST /catalogs/{cat_path}/collections`.
 
         Args:
+            cat_path: path of the existing catalog containing the collection
             collection: the collection
+            workspace: the requesting workspace.
 
         Returns:
             The collection that was created.
@@ -228,18 +352,20 @@ class AsyncBaseTransactionsClient(abc.ABC):
 
     @abc.abstractmethod
     async def update_collection(
-        self, collection_id: str, collection: Collection, **kwargs
+        self, cat_path: str, collection_id: str, collection: Collection, workspace: str, **kwargs
     ) -> Optional[Union[stac.Collection, Response]]:
         """Perform a complete update on an existing collection.
 
-        Called with `PUT /collections/{collection_id}`. It is expected that this item
+        Called with `PUT /catalogs/{cat_path}/collections/{collection_id}`. It is expected that this item
         already exists.  The update should do a diff against the saved collection and
         perform any necessary updates.  Partial updates are not supported by the
         transactions extension.
 
         Args:
+            cat_path: path of the existing catalog containing the collection
             collection_id: id of the existing collection to be updated
             collection: the updated collection (must be complete)
+            workspace: the requesting workspace.
 
         Returns:
             The updated collection.
@@ -248,17 +374,115 @@ class AsyncBaseTransactionsClient(abc.ABC):
 
     @abc.abstractmethod
     async def delete_collection(
-        self, collection_id: str, **kwargs
+        self, cat_path: str, collection_id: str, workspace: str, **kwargs
     ) -> Optional[Union[stac.Collection, Response]]:
         """Delete a collection.
 
-        Called with `DELETE /collections/{collection_id}`
+        Called with `DELETE /catalogs/{cat_path}/collections/{collection_id}`
 
         Args:
+            cat_path: path of the existing catalog containing the collection
             collection_id: id of the collection.
+            workspace: the requesting workspace.
 
         Returns:
             The deleted collection.
+        """
+        ...
+
+    @abc.abstractmethod
+    async def create_catalog(
+        self, cat_path: str, catalog: Catalog, workspace: str, **kwargs
+    ) -> Optional[Union[stac.Catalog, Response]]:
+        """Create a new catalog.
+
+        Called with `POST /catalogs/{cat_path}/catalogs`.
+
+        Args:
+            cat_path: path of the existing catalog containing the catalog
+            catalog: the catalog
+            workspace: the requesting workspace.
+
+        Returns:
+            The catalog that was created.
+        """
+        ...
+
+    @abc.abstractmethod
+    async def update_catalog(
+        self, cat_path: str, catalog: Catalog, workspace: str, **kwargs
+    ) -> Optional[Union[stac.Catalog, Response]]:
+        """Perform a complete update on an existing catalog.
+
+        Called with `PUT /catalogs/{cat_path}`. It is expected that this item
+        already exists.  The update should do a diff against the saved catalog and
+        perform any necessary updates.  Partial updates are not supported by the
+        transactions extension.
+
+        Args:
+            cat_path: path of the existing catalog containing the catalog
+            catalog: the updated catalog (must be complete)
+            workspace: the requesting workspace.
+
+        Returns:
+            The updated catalog.
+        """
+        ...
+
+    @abc.abstractmethod
+    async def delete_catalog(
+        self, cat_path: str, workspace: str, **kwargs
+    ) -> Optional[Union[stac.Catalog, Response]]:
+        """Delete a catalog.
+
+        Called with `DELETE /catalogs/{cat_path}`
+
+        Args:
+            cat_path: path of the catalog.
+            workspace: the requesting workspace.
+
+        Returns:
+            The deleted catalog.
+        """
+        ...
+
+    @abc.abstractmethod
+    def update_collection_access_policy(
+        self, cat_path: str, collection_id: str, access_policy: AccessPolicy, workspace: str, **kwargs
+    ) -> Optional[Union[stac.Collection, Response]]:
+        """Perform an update of the access policy for a collection.
+
+        Called with `PUT /catalogs/{cat_path}/collections/{collection_id}/access-policy`. It is expected that this
+        collection already exists.  The update should perform any necessary updates to the collection access-policy.  
+        Partial updates are not supported by the transactions extension.
+
+        Args:
+            cat_path: path of the existing catalog containing the collection
+            collection_id: id of the existing collection to be updated
+            access_policy: the access_policy to apply to the collection.
+            workspace: the requesting workspace.
+
+        Returns:
+            The updated collection.
+        """
+        ...
+
+    @abc.abstractmethod
+    def update_catalog_access_policy(
+        self, cat_path: str, access_policy: AccessPolicy, workspace: str, **kwargs
+    ) -> Optional[Union[stac.Collection, Response]]:
+        """Perform an update of the access policy for a catalog.
+
+        Called with `PUT /catalogs/{cat_path}/access-policy`. It is expected that this
+        catalog already exists.  The update should perform any necessary updates to the catalog access-policy.  
+
+        Args:
+            cat_path: path of the existing catalog to be updated
+            access_policy: the access_policy to apply to the catalog.
+            workspace: the requesting workspace.
+
+        Returns:
+            The updated catalog.
         """
         ...
 
@@ -340,6 +564,20 @@ class BaseCoreClient(LandingPageMixin, abc.ABC):
         factory=lambda: BASE_CONFORMANCE_CLASSES
     )
     extensions: List[ApiExtension] = attr.ib(default=attr.Factory(list))
+    post_request_model = attr.ib(default=None)
+
+    @post_request_model.validator
+    def _deprecate_post_model(self, attribute, value):
+        """Check and raise warning if `post_request_model` is set."""
+        if value is not None:
+            warnings.warn(
+                "`post_request_model` attribute is deprecated and will be removed in 3.1",
+                DeprecationWarning,
+            )
+
+    def __attrs_post_init__(self):
+        """Set default value for post_request_model."""
+        self.post_request_model = self.post_request_model or BaseSearchPostRequest
 
     def conformance_classes(self) -> List[str]:
         """Generate conformance classes by adding extension conformance to base
@@ -460,14 +698,16 @@ class BaseCoreClient(LandingPageMixin, abc.ABC):
 
     @abc.abstractmethod
     def post_search(
-        self, search_request: BaseSearchPostRequest, **kwargs
+        self, search_request: BaseSearchPostRequest, workspaces: Optional[List[str]], cat_path: str = None, **kwargs
     ) -> stac.ItemCollection:
         """Cross catalog search (POST).
 
-        Called with `POST /search`.
+        Called with `POST /catalogs/{cat_path}/search`.
 
         Args:
             search_request: search request parameters.
+            workspaces: list of workspaces to search.
+            cat_path: path of the catalog to search.
 
         Returns:
             ItemCollection containing items which match the search criteria.
@@ -477,17 +717,18 @@ class BaseCoreClient(LandingPageMixin, abc.ABC):
     @abc.abstractmethod
     def get_search(
         self,
+        cat_path: str,
         collections: Optional[List[str]] = None,
         ids: Optional[List[str]] = None,
         bbox: Optional[BBox] = None,
         intersects: Optional[Geometry] = None,
-        datetime: Optional[str] = None,
+        datetime: Optional[DateTimeType] = None,
         limit: Optional[int] = 10,
         **kwargs,
     ) -> stac.ItemCollection:
         """Cross catalog search (GET).
 
-        Called with `GET /search`.
+        Called with `GET /catalogs/{cat_path}/search`.
 
         Returns:
             ItemCollection containing items which match the search criteria.
@@ -495,14 +736,16 @@ class BaseCoreClient(LandingPageMixin, abc.ABC):
         ...
 
     @abc.abstractmethod
-    def get_item(self, item_id: str, collection_id: str, **kwargs) -> stac.Item:
+    def get_item(self, cat_path: str, item_id: str, collection_id: str, workspaces: Optional[List[str]], **kwargs) -> stac.Item:
         """Get item by id.
 
-        Called with `GET /collections/{collection_id}/items/{item_id}`.
+        Called with `GET /catalogs/{cat_path}/collections/{collection_id}/items/{item_id}`.
 
         Args:
+            cat_path: Path of the catalog.
             item_id: Id of the item.
             collection_id: Id of the collection.
+            workspaces: list of workspaces to search.
 
         Returns:
             Item.
@@ -521,13 +764,15 @@ class BaseCoreClient(LandingPageMixin, abc.ABC):
         ...
 
     @abc.abstractmethod
-    def get_collection(self, collection_id: str, **kwargs) -> stac.Collection:
+    def get_collection(self, cat_path: str, collection_id: str, workspaces: Optional[List[str]], **kwargs) -> stac.Collection:
         """Get collection by id.
 
-        Called with `GET /collections/{collection_id}`.
+        Called with `GET /catalogs/{cat_path}/collections/{collection_id}`.
 
         Args:
+            cat_path: Path of the catalog.
             collection_id: Id of the collection.
+            workspaces: list of workspaces to search.
 
         Returns:
             Collection.
@@ -535,21 +780,53 @@ class BaseCoreClient(LandingPageMixin, abc.ABC):
         ...
 
     @abc.abstractmethod
+    def all_catalogs(self, **kwargs) -> stac.Catalogs:
+        """Get all available catalogs.
+
+        Called with `GET /catalogs`.
+
+        Returns:
+            A list of catalogs.
+        """
+        ...
+
+    @abc.abstractmethod
+    def get_catalog(self, cat_path: str, catalog_id: str, **kwargs) -> stac.Catalog:
+        """Get catalog by id.
+
+        Called with `GET /catalogs/{cat_path}/catalogs/{catalog_id}`.
+
+        Args:
+            cat_path: Path of the catalog.
+            catalog_id: Id of the catalog.
+
+        Returns:
+            Catalog.
+        """
+        ...
+
+    @abc.abstractmethod
     def item_collection(
         self,
+        cat_path: str,
         collection_id: str,
+        workspaces: Optional[List[str]], 
         bbox: Optional[BBox] = None,
-        datetime: Optional[str] = None,
+        datetime: Optional[DateTimeType] = None,
         limit: int = 10,
         token: str = None,
         **kwargs,
     ) -> stac.ItemCollection:
         """Get all items from a specific collection.
 
-        Called with `GET /collections/{collection_id}/items`
+        Called with `GET /catalogs/{cat_path}/collections/{collection_id}/items`
 
         Args:
+            cat_path: Path of the catalog.
             collection_id: id of the collection.
+            workspaces: list of workspaces to search.
+            bbox: bounding box to filter items.
+            datetime: datetime to filter items.
             limit: number of items to return.
             token: pagination token.
 
@@ -571,6 +848,20 @@ class AsyncBaseCoreClient(LandingPageMixin, abc.ABC):
         factory=lambda: BASE_CONFORMANCE_CLASSES
     )
     extensions: List[ApiExtension] = attr.ib(default=attr.Factory(list))
+    post_request_model = attr.ib(default=None)
+
+    @post_request_model.validator
+    def _deprecate_post_model(self, attribute, value):
+        """Check and raise warning if `post_request_model` is set."""
+        if value is not None:
+            warnings.warn(
+                "`post_request_model` attribute is deprecated and will be removed in 3.1",
+                DeprecationWarning,
+            )
+
+    def __attrs_post_init__(self):
+        """Set default value for post_request_model."""
+        self.post_request_model = self.post_request_model or BaseSearchPostRequest
 
     def conformance_classes(self) -> List[str]:
         """Generate conformance classes by adding extension conformance to base
@@ -703,7 +994,7 @@ class AsyncBaseCoreClient(LandingPageMixin, abc.ABC):
         ids: Optional[List[str]] = None,
         bbox: Optional[BBox] = None,
         intersects: Optional[Geometry] = None,
-        datetime: Optional[str] = None,
+        datetime: Optional[DateTimeType] = None,
         limit: Optional[int] = 10,
         **kwargs,
     ) -> stac.ItemCollection:
@@ -717,14 +1008,16 @@ class AsyncBaseCoreClient(LandingPageMixin, abc.ABC):
         ...
 
     @abc.abstractmethod
-    async def get_item(self, item_id: str, collection_id: str, **kwargs) -> stac.Item:
+    async def get_item(self, cat_path: str, item_id: str, collection_id: str, workspaces: Optional[List[str]], **kwargs) -> stac.Item:
         """Get item by id.
 
-        Called with `GET /collections/{collection_id}/items/{item_id}`.
+        Called with `GET /catalogs/{cat_path}/collections/{collection_id}/items/{item_id}`.
 
         Args:
+            cat_path: Path of the catalog.
             item_id: Id of the item.
             collection_id: Id of the collection.
+            workspaces: list of workspaces to search.
 
         Returns:
             Item.
@@ -743,13 +1036,15 @@ class AsyncBaseCoreClient(LandingPageMixin, abc.ABC):
         ...
 
     @abc.abstractmethod
-    async def get_collection(self, collection_id: str, **kwargs) -> stac.Collection:
+    async def get_collection(self, cat_path: str, collection_id: str, workspaces: Optional[List[str]], **kwargs) -> stac.Collection:
         """Get collection by id.
 
-        Called with `GET /collections/{collection_id}`.
+        Called with `GET /catalogs/{cat_path}/collections/{collection_id}`.
 
         Args:
+            cat_path: Path of the catalog.
             collection_id: Id of the collection.
+            workspaces: list of workspaces to search.
 
         Returns:
             Collection.
@@ -757,21 +1052,54 @@ class AsyncBaseCoreClient(LandingPageMixin, abc.ABC):
         ...
 
     @abc.abstractmethod
+    def all_catalogs(self, **kwargs) -> stac.Catalogs:
+        """Get all available catalogs.
+
+        Called with `GET /catalogs`.
+
+        Returns:
+            A list of catalogs.
+        """
+        ...
+
+    @abc.abstractmethod
+    def get_catalog(self, cat_path: str, catalog_id: str, workspaces: Optional[List[str]], **kwargs) -> stac.Catalog:
+        """Get catalog by id.
+
+        Called with `GET /catalogs/{cat_path}/catalogs/{catalog_id}`.
+
+        Args:
+            cat_path: Path of the catalog.
+            catalog_id: Id of the catalog.
+            workspaces: list of workspaces to search.
+
+        Returns:
+            Catalog.
+        """
+        ...
+
+    @abc.abstractmethod
     async def item_collection(
         self,
+        cat_path: str,
         collection_id: str,
+        workspaces: Optional[List[str]], 
         bbox: Optional[BBox] = None,
-        datetime: Optional[str] = None,
+        datetime: Optional[DateTimeType] = None,
         limit: int = 10,
         token: str = None,
         **kwargs,
     ) -> stac.ItemCollection:
         """Get all items from a specific collection.
 
-        Called with `GET /collections/{collection_id}/items`
+        Called with `GET /catalogs/{cat_path}/collections/{collection_id}/items`
 
         Args:
+            cat_path: Path of the catalog.
             collection_id: id of the collection.
+            workspaces: list of workspaces to search.
+            bbox: bounding box to filter items.
+            datetime: datetime to filter items.
             limit: number of items to return.
             token: pagination token.
 

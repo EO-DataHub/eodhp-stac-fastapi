@@ -11,7 +11,7 @@ class AsyncBaseFiltersClient(abc.ABC):
     """Defines a pattern for implementing the STAC filter extension."""
 
     async def get_queryables(
-        self, collection_id: Optional[str] = None, **kwargs
+        self, cat_path: Optional[str] = None, collection_id: Optional[str] = None, **kwargs
     ) -> Dict[str, Any]:
         """Get the queryables available for the given collection_id.
 
@@ -37,7 +37,7 @@ class BaseFiltersClient(abc.ABC):
     """Defines a pattern for implementing the STAC filter extension."""
 
     def get_queryables(
-        self, collection_id: Optional[str] = None, **kwargs
+        self, cat_path: Optional[str] = None, collection_id: Optional[str] = None, **kwargs
     ) -> Dict[str, Any]:
         """Get the queryables available for the given collection_id.
 
