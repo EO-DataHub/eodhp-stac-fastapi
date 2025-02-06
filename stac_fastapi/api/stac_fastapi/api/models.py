@@ -143,6 +143,7 @@ class BaseCollectionSearchGetRequest(APIRequest):
         ),
     ] = attr.ib(default=10)
     q: Optional[List[str]] = attr.ib(default=None, converter=str2list)
+    filter: Optional[str] = attr.ib(default=None)
 
 
 

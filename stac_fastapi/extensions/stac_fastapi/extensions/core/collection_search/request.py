@@ -18,7 +18,7 @@ from stac_fastapi.types.search import (
     _datetime_converter,
     str2list,
 )
-
+from typing import Any, Dict, List, Optional, Union
 @attr.s
 class BaseCollectionSearchAllGetRequest(APIRequest):
     """Basics additional Collection-Search parameters for the GET request."""
@@ -49,11 +49,12 @@ class BaseCollectionSearchPostRequest(BaseModel):
         None,
         description="Parameter to perform free-text queries against STAC metadata",
     )
-
+    filter: Optional[Union[str, Dict[str, Any]]]
     # Private properties to store the parsed datetime values.
     # Not part of the model schema.
     _start_date: Optional[dt] = None
     _end_date: Optional[dt] = None
+    filter: Optional[Union[str, Dict[str, Any]]]
 
     # Properties to return the private values
     @property
