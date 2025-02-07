@@ -195,48 +195,6 @@ class TransactionExtension(ApiExtension):
         """Register patch item endpoint (PATCH
         /collections/{collection_id}/items/{item_id})."""
         raise NotImplementedError
-    
-    def register_update_collection_access_control(self):
-        """Register update collection endpoint (PUT /collections/{collection_id})."""
-        self.router.add_api_route(
-            name="Update Collection Access Policy",
-            path="/catalogs/{cat_path:path}/collections/{collection_id}/access-policy",
-            response_model=Collection if self.settings.enable_response_models else None,
-            responses={
-                200: {
-                    "content": {
-                        MimeTypes.json.value: {},
-                    },
-                    "model": Collection,
-                }
-            },
-            response_class=self.response_class,
-            response_model_exclude_unset=True,
-            response_model_exclude_none=True,
-            methods=["PUT"],
-            endpoint=create_async_endpoint(self.client.update_collection_access_policy, PutCollectionAccessControl),
-        )
-
-    def register_update_catalog_access_control(self):
-        """Register update catalog endpoint (PUT /collections/{collection_id})."""
-        self.router.add_api_route(
-            name="Update Catalog Access Policy",
-            path="/catalogs/{cat_path:path}/access-policy",
-            response_model=Catalog if self.settings.enable_response_models else None,
-            responses={
-                200: {
-                    "content": {
-                        MimeTypes.json.value: {},
-                    },
-                    "model": Catalog,
-                }
-            },
-            response_class=self.response_class,
-            response_model_exclude_unset=True,
-            response_model_exclude_none=True,
-            methods=["PUT"],
-            endpoint=create_async_endpoint(self.client.update_catalog_access_policy, PutCatalogAccessControl),
-        )
 
     def register_create_collection(self):
         """Register create collection endpoint (POST /collections)."""
@@ -347,6 +305,48 @@ class TransactionExtension(ApiExtension):
         )
 
 
+    def register_update_collection_access_control(self):
+        """Register update collection endpoint (PUT /collections/{collection_id})."""
+        self.router.add_api_route(
+            name="Update Collection Access Policy",
+            path="/catalogs/{cat_path:path}/collections/{collection_id}/access-policy",
+            response_model=Collection if self.settings.enable_response_models else None,
+            responses={
+                200: {
+                    "content": {
+                        MimeTypes.json.value: {},
+                    },
+                    "model": Collection,
+                }
+            },
+            response_class=self.response_class,
+            response_model_exclude_unset=True,
+            response_model_exclude_none=True,
+            methods=["PUT"],
+            endpoint=create_async_endpoint(self.client.update_collection_access_policy, PutCollectionAccessControl),
+        )
+
+    def register_update_catalog_access_control(self):
+        """Register update catalog endpoint (PUT /collections/{collection_id})."""
+        self.router.add_api_route(
+            name="Update Catalog Access Policy",
+            path="/catalogs/{cat_path:path}/access-policy",
+            response_model=Catalog if self.settings.enable_response_models else None,
+            responses={
+                200: {
+                    "content": {
+                        MimeTypes.json.value: {},
+                    },
+                    "model": Catalog,
+                }
+            },
+            response_class=self.response_class,
+            response_model_exclude_unset=True,
+            response_model_exclude_none=True,
+            methods=["PUT"],
+            endpoint=create_async_endpoint(self.client.update_catalog_access_policy, PutCatalogAccessControl),
+        )
+
     def register_delete_catalog(self):
         """Register delete catalog endpoint (DELETE /catalogs/{cat_path})."""
         self.router.add_api_route(
@@ -385,12 +385,13 @@ class TransactionExtension(ApiExtension):
         self.register_create_item()
         self.register_update_item()
         self.register_delete_item()
+        self.register_update_catalog_access_control()
+        self.register_update_collection_access_control()
         self.register_create_collection()
         self.register_update_collection()
-        self.register_update_collection_access_control()
         self.register_delete_collection()
         self.register_create_catalog()
         self.register_update_catalog()
-        self.register_update_catalog_access_control()
+        
         self.register_delete_catalog()
         app.include_router(self.router, tags=["Transaction Extension"])
