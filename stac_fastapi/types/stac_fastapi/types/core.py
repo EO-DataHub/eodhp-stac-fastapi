@@ -244,7 +244,7 @@ class BaseTransactionsClient(abc.ABC):
     @abc.abstractmethod
     def update_catalog_access_policy(
         self, cat_path: str, access_policy: AccessPolicy, workspace: str, **kwargs
-    ) -> Optional[Union[stac.Collection, Response]]:
+    ) -> None:
         """Perform an update of the access policy for a catalog.
 
         Called with `PUT /catalogs/{cat_path}/catalogs/{catalog_id}/access-policy`. It is expected that this
@@ -470,7 +470,7 @@ class AsyncBaseTransactionsClient(abc.ABC):
     @abc.abstractmethod
     def update_catalog_access_policy(
         self, cat_path: str, access_policy: AccessPolicy, workspace: str, **kwargs
-    ) -> Optional[Union[stac.Collection, Response]]:
+    ) -> None:
         """Perform an update of the access policy for a catalog.
 
         Called with `PUT /catalogs/{cat_path}/access-policy`. It is expected that this
