@@ -36,8 +36,7 @@ class BaseCollectionSearchAllGetRequest(APIRequest):
     ] = attr.ib(default=10)
     q: Optional[List[str]] = attr.ib(default=None, converter=str2list)
     filter: Optional[str] = attr.ib(default=None)
-    filter_lang: Optional[FilterLang]
-
+    filter_lang: Optional[FilterLang] = attr.ib(default="cql2-json")
 
 class BaseCollectionSearchPostRequest(BaseModel):
     """Collection-Search POST model."""
