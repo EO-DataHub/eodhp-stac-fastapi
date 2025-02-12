@@ -90,7 +90,7 @@ class ItemLinks(BaseLinks):
             type=MimeTypes.geojson,
             href=urljoin(
                 self.base_url,
-                f"{self.catalog_path}/collections/{self.collection_id}/items/{self.item_id}",
+                f"catalogs/{self.catalog_path}/collections/{self.collection_id}/items/{self.item_id}",
             ),
         )
 
@@ -99,7 +99,7 @@ class ItemLinks(BaseLinks):
         return dict(
             rel=Relations.parent,
             type=MimeTypes.json,
-            href=urljoin(self.base_url, f"{self.catalog_path}/collections/{self.collection_id}"),
+            href=urljoin(self.base_url, f"catalogs/{self.catalog_path}/collections/{self.collection_id}"),
         )
 
     def collection(self) -> Dict[str, Any]:
@@ -107,7 +107,7 @@ class ItemLinks(BaseLinks):
         return dict(
             rel=Relations.collection,
             type=MimeTypes.json,
-            href=urljoin(self.base_url, f"{self.catalog_path}/collections/{self.collection_id}"),
+            href=urljoin(self.base_url, f"catalogs/{self.catalog_path}/collections/{self.collection_id}"),
         )
 
     def create_links(self) -> List[Dict[str, Any]]:
