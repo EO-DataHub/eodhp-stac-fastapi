@@ -1,7 +1,7 @@
 """Request models for the Collection-Search extension."""
 
 from datetime import datetime as dt
-from typing import List, Optional, Tuple, cast
+from typing import Any, List, Optional, Tuple, cast, Union, Dict
 
 import attr
 from fastapi import Query, Path
@@ -18,7 +18,6 @@ from stac_fastapi.types.search import (
     _datetime_converter,
     str2list,
 )
-from typing import Any, Dict, List, Optional, Union
 @attr.s
 class BaseCollectionSearchAllGetRequest(APIRequest):
     """Basics additional Collection-Search parameters for the GET request."""
