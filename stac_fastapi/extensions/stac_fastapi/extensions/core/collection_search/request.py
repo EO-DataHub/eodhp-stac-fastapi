@@ -51,7 +51,7 @@ class BaseCollectionSearchPostRequest(BaseModel):
         description="Parameter to perform free-text queries against STAC metadata",
     )
     filter: Optional[Union[str, Dict[str, Any]]]
-    filter_lang: Optional[FilterLang] = Field(alias="filter-lang", default="cql-json")
+    filter_lang: Optional[FilterLang] = Field(alias="filter-lang", default="cql2-json")
     # Private properties to store the parsed datetime values.
     # Not part of the model schema.
     _start_date: Optional[dt] = None
