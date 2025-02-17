@@ -18,6 +18,7 @@ from stac_fastapi.types.search import (
     _datetime_converter,
     str2list,
 )
+from stac_fastapi.extensions.core.filter.request import FilterLang
 @attr.s
 class BaseCollectionSearchAllGetRequest(APIRequest):
     """Basics additional Collection-Search parameters for the GET request."""
@@ -34,6 +35,7 @@ class BaseCollectionSearchAllGetRequest(APIRequest):
     ] = attr.ib(default=10)
     q: Optional[List[str]] = attr.ib(default=None, converter=str2list)
     filter: Optional[str] = attr.ib(default=None)
+    filter_lang: Optional[FilterLang] = attr.ib(default="cql2-json")
 
 class BaseCollectionSearchPostRequest(BaseModel):
     """Collection-Search POST model."""
@@ -49,6 +51,7 @@ class BaseCollectionSearchPostRequest(BaseModel):
         description="Parameter to perform free-text queries against STAC metadata",
     )
     filter: Optional[Union[str, Dict[str, Any]]]
+    filter_lang: Optional[FilterLang] = Field(alias="filter-lang", default="cql-json")
     # Private properties to store the parsed datetime values.
     # Not part of the model schema.
     _start_date: Optional[dt] = None
