@@ -131,7 +131,6 @@ class StacApi:
         default=attr.Factory(
             lambda: [
                 Middleware(BrotliMiddleware),
-                Middleware(CORSMiddleware),
                 Middleware(ProxyHeaderMiddleware),
             ]
         )
