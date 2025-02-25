@@ -114,8 +114,8 @@ def _filter_converter(
         Query(
             alias="filter",
             description="""A CQL filter expression for filtering items.\n
-Supports `CQL-JSON` as defined in https://portal.ogc.org/files/96288\n
-Remember to URL encode the CQL-JSON if using GET""",
+                Supports `CQL-JSON` as defined in https://portal.ogc.org/files/96288\n
+                Remember to URL encode the CQL-JSON if using GET""",
             json_schema_extra={
                 "example": "id='LC08_L1TP_060247_20180905_20180912_01_T1_L1TP' AND collection='landsat8_l1tp'",  # noqa: E501
             },
