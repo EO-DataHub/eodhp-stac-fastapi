@@ -2,7 +2,7 @@
 
 """
 
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Literal
 
 import attr
 from fastapi import Query, Path, Body
@@ -22,11 +22,19 @@ def crop(v: PositiveInt) -> PositiveInt:
         v = limit
     return v
 
-
-def str2list(x: str) -> Optional[List[str]]:
-    """Convert string to list base on , delimiter."""
-    if x:
-        return x.split(",")
+def str2list(
+    val: Annotated[
+        Optional[str],
+        Query(
+            description="Free-text search terms to query against collection metadata. Separate multiple terms with commas.",
+            json_schema_extra={
+                "example": "climate,temperature,optical",
+            },
+        ),
+    ] = None,
+) -> Optional[List[str]]:
+    if val:
+        return val.split(",")
 
     return None
 
@@ -100,6 +108,32 @@ Either a date-time or an interval, open or closed. Date and time expressions adh
 ):
     return str_to_interval(val)
 
+def _filter_converter(
+    val: Annotated[
+        Optional[str],
+        Query(
+            alias="filter",
+            description="""A CQL filter expression for filtering items.\n
+                Supports `CQL-JSON` as defined in https://portal.ogc.org/files/96288\n
+                Remember to URL encode the CQL-JSON if using GET""",
+            json_schema_extra={
+                "example": "id='LC08_L1TP_060247_20180905_20180912_01_T1_L1TP' AND collection='landsat8_l1tp'",  # noqa: E501
+            },
+        ),
+    ] = attr.ib(default=None)
+) -> Optional[str]:
+    return val
+
+def _filter_lang_converter(
+    val: Annotated[
+        Optional[Literal["cql-json", "cql2-json", "cql2-text"]],
+        Query(
+            alias="filter-lang",
+            description="The CQL filter encoding that the 'filter' value uses.",
+        ),
+    ] = attr.ib(default="cql2-text")
+) -> Optional[str]:
+    return val
 
 # Be careful: https://github.com/samuelcolvin/pydantic/issues/1423#issuecomment-642797287
 NumType = Union[float, int]
