@@ -17,6 +17,8 @@ from stac_fastapi.types.search import (
     _bbox_converter,
     _datetime_converter,
     str2list,
+    _filter_converter,
+    _filter_lang_converter
 )
 from stac_fastapi.extensions.core.filter.request import FilterLang
 @attr.s
@@ -34,8 +36,8 @@ class BaseCollectionSearchAllGetRequest(APIRequest):
         ),
     ] = attr.ib(default=10)
     q: Optional[List[str]] = attr.ib(default=None, converter=str2list)
-    filter: Optional[str] = attr.ib(default=None)
-    filter_lang: Optional[FilterLang] = attr.ib(default="cql2-text")
+    filter: Optional[str] = attr.ib(default=None, converter=_filter_converter)
+    filter_lang: Optional[FilterLang] = attr.ib(default="cql2-text", converter=_filter_lang_converter)
 
 class BaseCollectionSearchPostRequest(BaseModel):
     """Collection-Search POST model."""
@@ -48,10 +50,36 @@ class BaseCollectionSearchPostRequest(BaseModel):
     )
     q: Optional[List[str]] = Field(
         None,
-        description="Parameter to perform free-text queries against STAC metadata",
+        description="Free-text search terms to query against collection metadata. Separate multiple terms with commas.",
+        json_schema_extra={
+            "example": "climate,temperature,optical",
+        },
     )
-    filter: Optional[Union[str, Dict[str, Any]]]
-    filter_lang: Optional[FilterLang] = Field(alias="filter-lang", default="cql2-json")
+    filter: Optional[Union[str, Dict[str, Any]]] = Field(
+        default=None,
+        alias="filter",
+        description="A CQL filter expression for filtering items.",
+        json_schema_extra={
+            "example": {
+                "op": "and",
+                "args": [
+                    {
+                        "op": "=",
+                        "args": [
+                            {"property": "id"},
+                            "LC08_L1TP_060247_20180905_20180912_01_T1_L1TP",
+                        ],
+                    },
+                    {"op": "=", "args": [{"property": "collection"}, "landsat8_l1tp"]},
+                ],
+            },
+        }
+    )
+    filter_lang: Optional[FilterLang] = Field(
+        alias="filter-lang",
+        default="cql2-json",
+        description="The CQL filter encoding that the 'filter' value uses."
+    )
     # Private properties to store the parsed datetime values.
     # Not part of the model schema.
     _start_date: Optional[dt] = None
