@@ -18,7 +18,7 @@ from typing_extensions import Annotated
 
 
 from stac_fastapi.api.errors import DEFAULT_STATUS_CODES, add_exception_handlers
-from stac_fastapi.api.middleware import CORSMiddleware, ProxyHeaderMiddleware
+from stac_fastapi.api.middleware import ProxyHeaderMiddleware, TrailingSlashRedirectMiddleware
 from stac_fastapi.api.models import (
     APIRequest,
     BaseCatalogUri,
@@ -132,6 +132,7 @@ class StacApi:
             lambda: [
                 Middleware(BrotliMiddleware),
                 Middleware(ProxyHeaderMiddleware),
+                Middleware(TrailingSlashRedirectMiddleware),
             ]
         )
     )
