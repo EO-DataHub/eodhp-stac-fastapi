@@ -141,6 +141,7 @@ class TrailingSlashRedirectMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         print("REDIRECT MIDDLEWARE")
         if request.url.path != '/' and request.url.path.endswith('/'):
-            return RedirectResponse(url=request.url.path.rstrip('/'))
+            new_url = request.url_for(request.scope["endpoint"]).rstrip('/')
+            return RedirectResponse(url=new_url)
         response = await call_next(request)
         return response
