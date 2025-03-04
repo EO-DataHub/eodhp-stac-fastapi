@@ -139,6 +139,7 @@ class ProxyHeaderMiddleware:
 # New class to handle trailing slash redirects
 class TrailingSlashRedirectMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
+        print("REDIRECT MIDDLEWARE")
         if request.url.path != '/' and request.url.path.endswith('/'):
             return RedirectResponse(url=request.url.path.rstrip('/'))
         response = await call_next(request)
