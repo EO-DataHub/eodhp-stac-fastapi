@@ -6,7 +6,9 @@ import typing
 from http.client import HTTP_PORT, HTTPS_PORT
 from typing import List, Tuple
 
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware as _CORSMiddleware
+from starlette.responses import RedirectResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 
@@ -132,3 +134,15 @@ class ProxyHeaderMiddleware:
             for name, value in scope["headers"]
             if name.decode() != header_name
         ] + [(str.encode(header_name), str.encode(new_value))]
+
+
+# New class to handle trailing slash redirects
+class TrailingSlashRedirectMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        root_path = request.scope.get("root_path", "")
+        full_path = root_path + request.url.path
+        if full_path != '/' and full_path.endswith('/'):
+            new_url = request.url.replace(path=full_path.rstrip('/'))
+            return RedirectResponse(url=str(new_url), status_code=308)
+        response = await call_next(request)
+        return response
