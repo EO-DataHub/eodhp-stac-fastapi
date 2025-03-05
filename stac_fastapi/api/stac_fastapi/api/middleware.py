@@ -143,6 +143,6 @@ class TrailingSlashRedirectMiddleware(BaseHTTPMiddleware):
         full_path = root_path + request.url.path
         if full_path != '/' and full_path.endswith('/'):
             new_url = request.url.replace(path=full_path.rstrip('/'))
-            return RedirectResponse(url=str(new_url))
+            return RedirectResponse(url=str(new_url), status_code=308)
         response = await call_next(request)
         return response
