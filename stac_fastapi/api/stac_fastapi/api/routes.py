@@ -88,16 +88,25 @@ def extract_headers(
             options={"verify_signature": False},
             algorithms=["HS256"],
         )
-        workspaces = decoded_jwt.get("workspaces", [])
-        logger.info(f"User is authenticated with workspaces: {workspaces}")
+        username = decoded_jwt.get("preferred_username", None)
+        if "workspaces" not in decoded_jwt:
+            # If the JWT does not contain the workspaces claim, set it to an empty set
+            workspaces = set([])
+            logger.warning("JWT for username: %s does not contain 'workspaces' claim", username)
+        else:
+            workspaces = set(decoded_jwt.get("workspaces", []))
+            logger.info(f"User is authenticated with workspaces: {workspaces}")
 
         user_services = decoded_jwt.get("user_services", None)
         if user_services:
             logger.info(f"User has access to user service workspace: {user_services}")
-            workspaces.append(user_services)
+            # user_services is a single string, convert it to a set
+            user_services = set([user_services])
+            # Take union of workspaces and user_services
+            workspaces |= user_services
         
         # Add the workspaces to the headers
-        headers["X-Workspaces"] = workspaces
+        headers["X-Workspaces"] = list(workspaces)
         headers["X-Authenticated"] = True
     else:
         logger.info("User is not authenticated")
