@@ -21,7 +21,7 @@ from starlette.status import HTTP_204_NO_CONTENT
 
 from stac_fastapi.api.models import APIRequest
 
-from stac_fastapi.api.settings import KEYCLOAK_BASE_URL, REALM, CLIENT_ID, CLIENT_SECRET, CACHE_CONTROL_CATALOGS_LIST, CACHE_CONTROL_HEADERS
+from stac_fastapi.api.settings import CACHE_CONTROL_CATALOGS_LIST, CACHE_CONTROL_HEADERS
 
 # Get the logger for this module
 logger = logging.getLogger(__name__)
@@ -37,8 +37,6 @@ console_handler.setFormatter(formatter)
 
 # Add the handler to the logger
 logger.addHandler(console_handler)
-
-KEYCLOAK_URL = f"{KEYCLOAK_BASE_URL}/realms/{REALM}/protocol/openid-connect/token"
 
 def _wrap_response(resp: Any, verb: str, url_path: str) -> Any:
     if resp is not None:
