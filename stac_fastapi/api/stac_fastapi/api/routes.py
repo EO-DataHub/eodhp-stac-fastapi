@@ -84,7 +84,6 @@ def extract_headers(
     headers = {}
     if credentials:
         # Exchange the token
-        logger.info(credentials.credentials)
         keycloak_token = credentials.credentials
         decoded_jwt = jwt.decode(
             keycloak_token,
@@ -92,13 +91,11 @@ def extract_headers(
             algorithms=["HS256"],
         )
         workspaces = decoded_jwt.get("workspaces", [])
-        user_services = decoded_jwt.get("user_services", None)
         logger.info(f"User is authenticated with workspaces: {workspaces}")
+
+        user_services = decoded_jwt.get("user_services", None)
         if user_services:
             logger.info(f"User has access to user service workspace: {user_services}")
-
-        # Append user_services to workspaces if it exists
-        if user_services:
             workspaces.append(user_services)
         
         # Add the workspaces to the headers
