@@ -69,25 +69,6 @@ def sync_to_async(func):
 # Define the OAuth2 scheme for Bearer token
 bearer_scheme = HTTPBearer(auto_error=False)
 
-def token_exchange(subject_token: str, scope: str = None) -> str:
-    payload = {
-        "client_id": CLIENT_ID,
-        "client_secret": CLIENT_SECRET,
-        "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
-        "subject_token": subject_token,
-        "scope": scope,
-    }
-    response = requests.post(
-        KEYCLOAK_URL,
-        data=payload,
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-    )
-
-    if not response.ok:
-        raise Exception(f"Error: {response.text}")
-
-    return response.json().get("access_token")
-
 # TODO: Also extract group information from the headers
 def extract_headers(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
