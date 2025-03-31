@@ -95,6 +95,7 @@ def extract_headers(
         logger.info(f"User is authenticated with workspaces: {workspaces}")
         if user_services:
             logger.info(f"User has access to user service workspace: {user_services}")
+
         # Append user_services to workspaces if it exists
         headers["X-Workspaces"] = workspaces.append(user_services) if user_services else workspaces
         headers["X-Authenticated"] = True
