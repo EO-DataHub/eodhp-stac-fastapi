@@ -84,6 +84,7 @@ def extract_headers(
     headers = {}
     if credentials:
         # Exchange the token
+        logger.info(credentials.credentials)
         keycloak_token = credentials.credentials
         decoded_jwt = jwt.decode(
             keycloak_token,
