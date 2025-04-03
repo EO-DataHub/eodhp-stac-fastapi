@@ -21,7 +21,7 @@ from starlette.status import HTTP_204_NO_CONTENT
 
 from stac_fastapi.api.models import APIRequest
 
-from stac_fastapi.api.settings import KEYCLOAK_BASE_URL, REALM, CLIENT_ID, CLIENT_SECRET, CACHE_CONTROL_CATALOGS_LIST, CACHE_CONTROL_HEADERS
+from stac_fastapi.api.settings import CACHE_CONTROL_CATALOGS_LIST, CACHE_CONTROL_HEADERS
 
 # Get the logger for this module
 logger = logging.getLogger(__name__)
@@ -37,8 +37,6 @@ console_handler.setFormatter(formatter)
 
 # Add the handler to the logger
 logger.addHandler(console_handler)
-
-KEYCLOAK_URL = f"{KEYCLOAK_BASE_URL}/realms/{REALM}/protocol/openid-connect/token"
 
 def _wrap_response(resp: Any, verb: str, url_path: str) -> Any:
     if resp is not None:
@@ -69,25 +67,6 @@ def sync_to_async(func):
 # Define the OAuth2 scheme for Bearer token
 bearer_scheme = HTTPBearer(auto_error=False)
 
-def token_exchange(subject_token: str, scope: str = None) -> str:
-    payload = {
-        "client_id": CLIENT_ID,
-        "client_secret": CLIENT_SECRET,
-        "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
-        "subject_token": subject_token,
-        "scope": scope,
-    }
-    response = requests.post(
-        KEYCLOAK_URL,
-        data=payload,
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-    )
-
-    if not response.ok:
-        raise Exception(f"Error: {response.text}")
-
-    return response.json().get("access_token")
-
 # TODO: Also extract group information from the headers
 def extract_headers(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
@@ -103,15 +82,31 @@ def extract_headers(
     headers = {}
     if credentials:
         # Exchange the token
-        keycloak_token = token_exchange(credentials.credentials, "workspaces")
+        keycloak_token = credentials.credentials
         decoded_jwt = jwt.decode(
             keycloak_token,
             options={"verify_signature": False},
             algorithms=["HS256"],
         )
-        workspaces = decoded_jwt.get("workspaces", [])
-        logger.info(f"User is authenticated with workspaces: {workspaces}")
-        headers["X-Workspaces"] = workspaces
+        username = decoded_jwt.get("preferred_username", None)
+        if "workspaces" not in decoded_jwt:
+            # If the JWT does not contain the workspaces claim, set it to an empty set
+            workspaces = set([])
+            logger.warning("JWT for username: %s does not contain 'workspaces' claim", username)
+        else:
+            workspaces = set(decoded_jwt.get("workspaces", []))
+            logger.info(f"User is authenticated with workspaces: {workspaces}")
+
+        user_services = decoded_jwt.get("user_services", None)
+        if user_services:
+            logger.info(f"User has access to user service workspace: {user_services}")
+            # user_services is a single string, convert it to a set
+            user_services = set([user_services])
+            # Take union of workspaces and user_services
+            workspaces |= user_services
+        
+        # Add the workspaces to the headers
+        headers["X-Workspaces"] = list(workspaces)
         headers["X-Authenticated"] = True
     else:
         logger.info("User is not authenticated")
