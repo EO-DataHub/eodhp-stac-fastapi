@@ -83,7 +83,6 @@ def extract_headers(
     if credentials:
         # Exchange the token
         keycloak_token = credentials.credentials
-        logger.info(f"Token is present: {keycloak_token}")
         decoded_jwt = jwt.decode(
             keycloak_token,
             options={"verify_signature": False},
