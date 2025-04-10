@@ -165,7 +165,7 @@ class BaseTransactionsClient(abc.ABC):
 
     @abc.abstractmethod
     def create_catalog(
-        self, catalog: Catalog, cat_path: str, workspace: str, **kwargs
+        self, catalog: Catalog, workspace: str, cat_path: Optional[str]=None, **kwargs
     ) -> Optional[Union[stac.Catalog, Response]]:
         """Create a new catalog.
 
@@ -392,7 +392,7 @@ class AsyncBaseTransactionsClient(abc.ABC):
 
     @abc.abstractmethod
     async def create_catalog(
-        self, cat_path: str, catalog: Catalog, workspace: str, **kwargs
+        self, catalog: Catalog, workspace: str, cat_path: Optional[str]=None, **kwargs
     ) -> Optional[Union[stac.Catalog, Response]]:
         """Create a new catalog.
 

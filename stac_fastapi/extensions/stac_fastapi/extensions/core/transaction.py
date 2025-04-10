@@ -66,6 +66,13 @@ class DeleteCollection(CollectionUri):
     workspace: str = attr.ib()
 
 @attr.s
+class PostRootCatalog(APIRequest):
+    """Create Root Catalog."""
+
+    workspace: str = attr.ib()
+    catalog: Annotated[Catalog, Body()] = attr.ib(default=None)
+
+@attr.s
 class PostCatalog(CreateCatalogUri):
     """Create Catalog."""
 
@@ -262,7 +269,7 @@ class TransactionExtension(ApiExtension):
         )
 
     def register_create_catalog(self):
-        """Register create Catalog endpoint (POST /catalogs)."""
+        """Register create Catalog endpoint (POST /catalogs/{cat_path}/catalogs)."""
         self.router.add_api_route(
             name="Create Catalog",
             path="/catalogs/{cat_path:path}/catalogs",
@@ -281,6 +288,28 @@ class TransactionExtension(ApiExtension):
             response_model_exclude_none=True,
             methods=["POST"],
             endpoint=create_async_endpoint(self.client.create_catalog, PostCatalog),
+        )
+
+    def register_create_root_catalog(self):
+        """Register create root Catalog endpoint (POST /catalogs)."""
+        self.router.add_api_route(
+            name="Create Root Catalog",
+            path="/catalogs",
+            status_code=201,
+            response_model=Catalog if self.settings.enable_response_models else None,
+            responses={
+                201: {
+                    "content": {
+                        MimeTypes.json.value: {},
+                    },
+                    "model": Catalog,
+                }
+            },
+            response_class=self.response_class,
+            response_model_exclude_unset=True,
+            response_model_exclude_none=True,
+            methods=["POST"],
+            endpoint=create_async_endpoint(self.client.create_catalog, PostRootCatalog),
         )
 
     def register_update_catalog(self):
@@ -391,6 +420,7 @@ class TransactionExtension(ApiExtension):
         self.register_update_collection()
         self.register_delete_collection()
         self.register_create_catalog()
+        self.register_create_root_catalog()
         self.register_update_catalog()
         
         self.register_delete_catalog()
