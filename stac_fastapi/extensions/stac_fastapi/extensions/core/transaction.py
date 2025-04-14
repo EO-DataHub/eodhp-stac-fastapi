@@ -411,17 +411,16 @@ class TransactionExtension(ApiExtension):
             None
         """
         self.router.prefix = app.state.router_prefix
+        self.register_update_collection_access_control()
+        self.register_update_catalog_access_control()
         self.register_create_item()
         self.register_update_item()
         self.register_delete_item()
-        self.register_update_catalog_access_control()
-        self.register_update_collection_access_control()
         self.register_create_collection()
         self.register_update_collection()
         self.register_delete_collection()
         self.register_create_catalog()
         self.register_create_root_catalog()
         self.register_update_catalog()
-        
         self.register_delete_catalog()
         app.include_router(self.router, tags=["Transaction Extension"])
