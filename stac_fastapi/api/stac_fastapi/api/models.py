@@ -125,13 +125,13 @@ class GetCatalogUri(APIRequest):
 class CreateCatalogUri(APIRequest):
     """Get or delete catalog."""
 
-    cat_path: Annotated[str, Path(description="Catalog path", regex=r"root$|(^([^/]+)(/catalogs/[^/]+)*$)")] = attr.ib()
+    cat_path: Annotated[str, Path(description="Catalog path", regex=r"^([^/]+)(/catalogs/[^/]+)*$")] = attr.ib()
 
 @attr.s
 class BaseCollectionSearchGetRequest(APIRequest):
     """Get or delete catalog."""
 
-    cat_path: Annotated[str, Path(description="Catalog path", regex=r"root$|(^([^/]+)(/catalogs/[^/]+)*$)")] = attr.ib()
+    cat_path: Annotated[str, Path(description="Catalog path", regex=r"^([^/]+)(/catalogs/[^/]+)*$")] = attr.ib()
     bbox: Optional[BBox] = attr.ib(default=None, converter=_bbox_converter)
     datetime: Optional[DateTimeType] = attr.ib(
         default=None, converter=_datetime_converter
