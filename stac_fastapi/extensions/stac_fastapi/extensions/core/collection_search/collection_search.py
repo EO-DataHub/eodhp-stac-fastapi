@@ -54,7 +54,9 @@ class CollectionSearchExtension(ApiExtension):
             the extension
     """
 
-    GET: BaseCollectionSearchAllGetRequest = attr.ib(default=BaseCollectionSearchAllGetRequest)
+    GET: BaseCollectionSearchAllGetRequest = attr.ib(
+        default=BaseCollectionSearchAllGetRequest
+    )
     POST = None
 
     conformance_classes: List[str] = attr.ib(
@@ -141,7 +143,9 @@ class CollectionSearchPostExtension(CollectionSearchExtension):
     schema_href: Optional[str] = attr.ib(default=None)
     router: APIRouter = attr.ib(factory=APIRouter)
 
-    GET: BaseCollectionSearchAllGetRequest = attr.ib(default=BaseCollectionSearchAllGetRequest)
+    GET: BaseCollectionSearchAllGetRequest = attr.ib(
+        default=BaseCollectionSearchAllGetRequest
+    )
     POST: BaseCollectionSearchPostRequest = attr.ib(
         default=BaseCollectionSearchPostRequest
     )
@@ -174,11 +178,15 @@ class CollectionSearchPostExtension(CollectionSearchExtension):
             },
             response_class=GeoJSONResponse,
             endpoint=create_async_endpoint(self.client.post_all_collections, self.POST),
+            description="Post all collections",
         )
 
         @attr.s
         class POST_cat_path(APIRequest):
-            cat_path: Annotated[str, Path(description="Catalog path", regex=r"^([^/]+)(/catalogs/[^/]+)*$")] = attr.ib()
+            cat_path: Annotated[
+                str,
+                Path(description="Catalog path", regex=r"^([^/]+)(/catalogs/[^/]+)*$"),
+            ] = attr.ib()
             search_request: self.POST = attr.ib()
 
         self.router.add_api_route(
@@ -197,10 +205,12 @@ class CollectionSearchPostExtension(CollectionSearchExtension):
                 },
             },
             response_class=GeoJSONResponse,
-            endpoint=create_async_endpoint(self.client.post_all_collections, POST_cat_path),
+            endpoint=create_async_endpoint(
+                self.client.post_all_collections, POST_cat_path
+            ),
+            description="Post collections using path",
         )
-        app.include_router(self.router)
-
+        app.include_router(self.router, tags=["Collection Search Extension"])
 
     @classmethod
     def from_extensions(
