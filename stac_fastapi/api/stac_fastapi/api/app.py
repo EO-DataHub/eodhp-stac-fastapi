@@ -259,7 +259,11 @@ class StacApi:
         class search_post_cat_request_model(APIRequest):
             cat_path: Annotated[
                 str,
-                Path(description="Catalog path", regex=r"^([^/]+)(/catalogs/[^/]+)*$"),
+                Path(
+                    description="Catalog path",
+                    example="public",
+                    regex=r"^([^/]+)(/catalogs/[^/]+)*$",
+                ),
             ] = attr.ib()
             search_request: self.search_post_request_model = attr.ib()
 

@@ -1,6 +1,4 @@
-"""stac_fastapi.types.search module.
-
-"""
+"""stac_fastapi.types.search module."""
 
 from typing import Dict, List, Optional, Union, Literal
 
@@ -21,6 +19,7 @@ def crop(v: PositiveInt) -> PositiveInt:
     if v > limit:
         v = limit
     return v
+
 
 def str2list(
     val: Annotated[
@@ -55,7 +54,7 @@ def _collection_converter(
         Query(
             description="Array of collection Ids to search for items.",
             json_schema_extra={
-                "example": "collection1,collection2",
+                "example": "cmip6,cci",
             },
         ),
     ] = None,
@@ -69,7 +68,7 @@ def _ids_converter(
         Query(
             description="Array of Item ids to return.",
             json_schema_extra={
-                "example": "item1,item2",
+                "example": "",
             },
         ),
     ] = None,
@@ -108,6 +107,7 @@ Either a date-time or an interval, open or closed. Date and time expressions adh
 ):
     return str_to_interval(val)
 
+
 def _filter_converter(
     val: Annotated[
         Optional[str],
@@ -120,9 +120,10 @@ def _filter_converter(
                 "example": "id='LC08_L1TP_060247_20180905_20180912_01_T1_L1TP' AND collection='landsat8_l1tp'",  # noqa: E501
             },
         ),
-    ] = attr.ib(default=None)
+    ] = attr.ib(default=None),
 ) -> Optional[str]:
     return val
+
 
 def _filter_lang_converter(
     val: Annotated[
@@ -131,9 +132,10 @@ def _filter_lang_converter(
             alias="filter-lang",
             description="The CQL filter encoding that the 'filter' value uses.",
         ),
-    ] = attr.ib(default="cql2-text")
+    ] = attr.ib(default="cql2-text"),
 ) -> Optional[str]:
     return val
+
 
 # Be careful: https://github.com/samuelcolvin/pydantic/issues/1423#issuecomment-642797287
 NumType = Union[float, int]
@@ -154,7 +156,14 @@ class APIRequest:
 class BaseSearchGetRequest(APIRequest):
     """Base arguments for GET Request."""
 
-    cat_path: Annotated[str, Path(description="Catalog path", regex=r"^([^/]+)(/catalogs/[^/]+)*$")] = attr.ib()
+    cat_path: Annotated[
+        str,
+        Path(
+            description="Catalog path",
+            example="public/catalogs/ceda-stac-catalogue",
+            regex=r"^([^/]+)(/catalogs/[^/]+)*$",
+        ),
+    ] = attr.ib()
     collections: Optional[List[str]] = attr.ib(
         default=None, converter=_collection_converter
     )

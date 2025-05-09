@@ -185,7 +185,11 @@ class CollectionSearchPostExtension(CollectionSearchExtension):
         class POST_cat_path(APIRequest):
             cat_path: Annotated[
                 str,
-                Path(description="Catalog path", regex=r"^([^/]+)(/catalogs/[^/]+)*$"),
+                Path(
+                    description="Catalog path",
+                    example="public",
+                    regex=r"^([^/]+)(/catalogs/[^/]+)*$",
+                ),
             ] = attr.ib()
             search_request: self.POST = attr.ib()
 
@@ -210,7 +214,7 @@ class CollectionSearchPostExtension(CollectionSearchExtension):
             ),
             description="Post collections using path",
         )
-        app.include_router(self.router, tags=["Collection Search Extension"])
+        app.include_router(self.router, tags=["CollectionSearch Extension"])
 
     @classmethod
     def from_extensions(
