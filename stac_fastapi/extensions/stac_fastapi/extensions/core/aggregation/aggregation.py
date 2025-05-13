@@ -150,4 +150,5 @@ class AggregationExtension(ApiExtension):
             description="Get available aggregations",
         )
 
-        app.include_router(self.router)
+        STAC_TAG = "Metadata APIs for data - finding and accessing data"
+        app.include_router(self.router, tags=[STAC_TAG])

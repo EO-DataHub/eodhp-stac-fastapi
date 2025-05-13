@@ -147,4 +147,5 @@ class FilterExtension(ApiExtension):
             endpoint=create_async_endpoint(self.client.get_queryables, EmptyRequest),
             description="Get available queryables",
         )
-        app.include_router(self.router)
+        STAC_TAG = "Metadata APIs for data - finding and accessing data"
+        app.include_router(self.router, tags=[STAC_TAG])

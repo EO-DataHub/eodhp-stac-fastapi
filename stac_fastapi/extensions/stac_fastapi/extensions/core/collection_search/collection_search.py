@@ -214,7 +214,7 @@ class CollectionSearchPostExtension(CollectionSearchExtension):
             ),
             description="This endpoint allows posting collections using the specified path and supports searching collections using the collection-search extension.",
         )
-        app.include_router(self.router)
+        app.include_router(self.router, tags=[self.settings.stac_fastapi_tag])
 
     @classmethod
     def from_extensions(

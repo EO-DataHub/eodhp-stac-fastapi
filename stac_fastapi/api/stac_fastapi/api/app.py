@@ -693,6 +693,28 @@ class StacApi:
             servers=self.app.servers,
         )
 
+        openapi_schema["tags"] = [
+            {
+                "name": "Metadata APIs for data - finding and accessing data",
+                "description": """\
+                Use these APIs to discover and retrieve public and private datasets in the EO Data Hub platform via the STAC Catalogue service. After locating dataset metadata—using any of the `/api/catalogue/stac/` endpoints and STAC extensions—you can follow the asset URLs in each feature to download or stream the data itself. These endpoints conform fully to the OGC STAC v1.0.0 specification.
+
+                **Common concepts**  
+                - **cat_path**: The namespace of the catalog (e.g. `public` or `my-org/catalogs/my-catalog`)  
+                - **Access control**: HTTP Bearer authentication scopes restrict results to datasets you’re permitted to see  
+
+                **Core endpoint groups**  
+                - `GET  /api/catalogue/stac/`  
+                - `GET  /api/catalogue/stac/search`  
+                - `POST /api/catalogue/stac/search`  
+                - `GET  /api/catalogue/stac/collections`  
+                - `GET  /api/catalogue/stac/collections/{collection_id}/items`  
+                - `GET  /api/catalogue/stac/collections/{collection_id}/items/{item_id}`  
+                - …and the STAC Aggregations, Queryables, and other extensions under `/api/catalogue/stac/`
+                """,
+            },
+        ]
+
         self.app.openapi_schema = openapi_schema
         return self.app.openapi_schema
 
@@ -743,7 +765,7 @@ class StacApi:
 
         # Register core STAC endpoints
         self.register_core()
-        self.app.include_router(self.router, tags=["Resource Catalogue"])
+        self.app.include_router(self.router, tags=[self.settings.stac_fastapi_tag])
 
         # keep link to the router prefix value
         router_prefix = self.router.prefix
