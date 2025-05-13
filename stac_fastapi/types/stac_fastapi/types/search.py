@@ -68,7 +68,7 @@ def _ids_converter(
         Query(
             description="Array of Item ids to return.",
             json_schema_extra={
-                "example": "",
+                "example": "esacci-sst-l4.json,ESACCI-LST-L3C-LST-SLSTRB-0.01deg_1MONTHLY_NIGHT-201812-202012-fv3.00",
             },
         ),
     ] = None,

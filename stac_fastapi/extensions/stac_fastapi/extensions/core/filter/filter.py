@@ -147,4 +147,4 @@ class FilterExtension(ApiExtension):
             endpoint=create_async_endpoint(self.client.get_queryables, EmptyRequest),
             description="Get available queryables",
         )
-        app.include_router(self.router, tags=["Filter Extension"])
+        app.include_router(self.router)

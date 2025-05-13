@@ -178,7 +178,7 @@ class CollectionSearchPostExtension(CollectionSearchExtension):
             },
             response_class=GeoJSONResponse,
             endpoint=create_async_endpoint(self.client.post_all_collections, self.POST),
-            description="Post all collections",
+            description="This endpoint allows posting all collections and supports searching collections using the collection-search extension.",
         )
 
         @attr.s
@@ -212,9 +212,9 @@ class CollectionSearchPostExtension(CollectionSearchExtension):
             endpoint=create_async_endpoint(
                 self.client.post_all_collections, POST_cat_path
             ),
-            description="Post collections using path",
+            description="This endpoint allows posting collections using the specified path and supports searching collections using the collection-search extension.",
         )
-        app.include_router(self.router, tags=["CollectionSearch Extension"])
+        app.include_router(self.router)
 
     @classmethod
     def from_extensions(

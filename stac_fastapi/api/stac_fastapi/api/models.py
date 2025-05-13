@@ -125,7 +125,7 @@ class BaseCatalogUri(APIRequest):
         str,
         Path(
             description="Catalog ID",
-            example="public/catalogs/ceda-stac-catalogue",
+            example="ceda-stac-catalogue",
             regex=r"^([^/]+)$",
         ),
     ] = attr.ib()
@@ -139,7 +139,7 @@ class GetCatalogUri(APIRequest):
         str,
         Path(
             description="Catalog path",
-            example="public",
+            example="public/catalogs/ceda-stac-catalogue",
             regex=r"^([^/]+)(/catalogs/[^/]+)*$",
         ),
     ] = attr.ib()
@@ -147,7 +147,7 @@ class GetCatalogUri(APIRequest):
         str,
         Path(
             description="Catalog ID",
-            example="public/catalogs/ceda-stac-catalogue",
+            example="ceda-stac-catalogue",
             regex=r"^([^/]+)$",
         ),
     ] = attr.ib()
@@ -170,7 +170,7 @@ class BaseCollectionSearchGetRequest(APIRequest):
         str,
         Path(
             description="Catalog path",
-            example="public",
+            example="public/catalogs/ceda-stac-catalogue",
             regex=r"^([^/]+)(/catalogs/[^/]+)*$",
         ),
     ] = attr.ib()

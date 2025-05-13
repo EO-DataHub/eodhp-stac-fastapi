@@ -189,7 +189,7 @@ class StacApi:
             response_model_exclude_none=True,
             methods=["GET"],
             endpoint=create_async_endpoint(self.client.landing_page, EmptyRequest),
-            description="This endpoint returns a list of all collections and catalogs in the STAC API.",
+            description="This is the landing page which returns the catalog details for the overall catalog and includes the top-level catalogs and collections.",
         )
 
     def register_conformance_classes(self):
@@ -408,7 +408,7 @@ class StacApi:
             endpoint=create_async_endpoint(
                 self.client.all_collections, self.collections_get_request_model
             ),
-            description="This endpoint retrieves all collections in the STAC API.",
+            description="This endpoint retrieves a collection from the STAC API and allows searching collections using the collection-search extension.",
         )
 
     def register_get_all_collections(self):
@@ -438,7 +438,7 @@ class StacApi:
             endpoint=create_async_endpoint(
                 self.client.all_collections, self.collections_get_all_request_model
             ),
-            description="This endpoint retrieves all collections in the STAC API.",
+            description="This endpoint retrieves a collection from the STAC API and allows searching collections using the collection-search extension.",
         )
 
     def register_get_collection(self):
@@ -554,7 +554,7 @@ class StacApi:
             endpoint=create_async_endpoint(
                 self.client.all_catalogs, self.catalogs_get_request_model
             ),
-            description="This endpoint retrieves catalogs in the STAC API.",
+            description="This endpoint retrieves all sub-catalogs in the given parent catalog.",
         )
 
     def register_get_catalog(self):
@@ -614,7 +614,7 @@ class StacApi:
             endpoint=create_async_endpoint(
                 self.client.get_catalog, self.base_catalog_get_request_model
             ),
-            description="This endpoint retrieves a base catalog from the STAC API.",
+            description="This endpoint retrieves a top-level catalog from the STAC API.",
         )
 
     def register_get_collection(self):
@@ -644,7 +644,7 @@ class StacApi:
             endpoint=create_async_endpoint(
                 self.client.get_collection, self.collection_get_request_model
             ),
-            description="This endpoint retrieves a collection from the STAC API.",
+            description="This endpoint retrieves a collection from the STAC API and allows searching collections using the collection-search extension.",
         )
 
     def register_core(self):
