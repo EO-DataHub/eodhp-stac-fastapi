@@ -75,6 +75,7 @@ def create_get_request_model(
         request_type="GET",
     )
 
+
 def create_get_all_request_model(
     extensions: Optional[List[ApiExtension]],
     base_model: BaseSearchAllGetRequest = BaseSearchAllGetRequest,
@@ -101,37 +102,78 @@ def create_post_request_model(
         request_type="POST",
     )
 
+
 @attr.s
 class CatalogUri(APIRequest):
     """Get or delete catalog."""
 
-    cat_path: Annotated[str, Path(description="Catalog path", regex=r"^([^/]+)(/catalogs/[^/]+)*$")] = attr.ib()
+    cat_path: Annotated[
+        str,
+        Path(
+            description="Catalog path",
+            example="public/catalogs/ceda-stac-catalog",
+            regex=r"^([^/]+)(/catalogs/[^/]+)*$",
+        ),
+    ] = attr.ib()
+
 
 @attr.s
 class BaseCatalogUri(APIRequest):
     """Get or delete catalog."""
 
-    catalog_id: Annotated[str, Path(description="Catalog ID", regex=r"^([^/]+)$")] = attr.ib()
+    catalog_id: Annotated[
+        str,
+        Path(
+            description="Catalog ID",
+            example="ceda-stac-catalogue",
+            regex=r"^([^/]+)$",
+        ),
+    ] = attr.ib()
 
 
 @attr.s
 class GetCatalogUri(APIRequest):
     """Get or delete catalog."""
 
-    cat_path: Annotated[str, Path(description="Catalog path", regex=r"^([^/]+)(/catalogs/[^/]+)*$")] = attr.ib()
-    catalog_id: Annotated[str, Path(description="Catalog ID", regex=r"^([^/]+)$")] = attr.ib()
+    cat_path: Annotated[
+        str,
+        Path(
+            description="Catalog path",
+            example="public/catalogs/ceda-stac-catalogue",
+            regex=r"^([^/]+)(/catalogs/[^/]+)*$",
+        ),
+    ] = attr.ib()
+    catalog_id: Annotated[
+        str,
+        Path(
+            description="Catalog ID",
+            example="ceda-stac-catalogue",
+            regex=r"^([^/]+)$",
+        ),
+    ] = attr.ib()
+
 
 @attr.s
 class CreateCatalogUri(APIRequest):
     """Get or delete catalog."""
 
-    cat_path: Annotated[str, Path(description="Catalog path", regex=r"^([^/]+)(/catalogs/[^/]+)*$")] = attr.ib()
+    cat_path: Annotated[
+        str, Path(description="Catalog path", regex=r"^([^/]+)(/catalogs/[^/]+)*$")
+    ] = attr.ib()
+
 
 @attr.s
 class BaseCollectionSearchGetRequest(APIRequest):
     """Get or delete catalog."""
 
-    cat_path: Annotated[str, Path(description="Catalog path", regex=r"^([^/]+)(/catalogs/[^/]+)*$")] = attr.ib()
+    cat_path: Annotated[
+        str,
+        Path(
+            description="Catalog path",
+            example="public/catalogs/ceda-stac-catalogue",
+            regex=r"^([^/]+)(/catalogs/[^/]+)*$",
+        ),
+    ] = attr.ib()
     bbox: Optional[BBox] = attr.ib(default=None, converter=_bbox_converter)
     datetime: Optional[DateTimeType] = attr.ib(
         default=None, converter=_datetime_converter
@@ -145,19 +187,26 @@ class BaseCollectionSearchGetRequest(APIRequest):
     q: Optional[List[str]] = attr.ib(default=None, converter=str2list)
 
 
-
 @attr.s
 class CollectionUri(CatalogUri):
     """Get or delete collection."""
 
-    collection_id: Annotated[str, Path(description="Collection ID")] = attr.ib()
-    
+    collection_id: Annotated[str, Path(description="Collection ID", example="cmip6")] = (
+        attr.ib()
+    )
+
 
 @attr.s
 class ItemUri(CollectionUri):
     """Get or delete item."""
 
-    item_id: Annotated[str, Path(description="Item ID")] = attr.ib()
+    item_id: Annotated[
+        str,
+        Path(
+            description="Item ID",
+            example="CMIP6.ScenarioMIP.THU.CIESM.ssp585.r1i1p1f1.Amon.rsus.gr.v20200806",
+        ),
+    ] = attr.ib()
 
 
 @attr.s

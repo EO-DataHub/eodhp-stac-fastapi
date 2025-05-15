@@ -1,6 +1,5 @@
 """Fastapi app creation."""
 
-
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 import attr
@@ -18,7 +17,10 @@ from typing_extensions import Annotated
 
 
 from stac_fastapi.api.errors import DEFAULT_STATUS_CODES, add_exception_handlers
-from stac_fastapi.api.middleware import ProxyHeaderMiddleware, TrailingSlashRedirectMiddleware
+from stac_fastapi.api.middleware import (
+    ProxyHeaderMiddleware,
+    TrailingSlashRedirectMiddleware,
+)
 from stac_fastapi.api.models import (
     APIRequest,
     BaseCatalogUri,
@@ -33,12 +35,18 @@ from stac_fastapi.api.models import (
 )
 from stac_fastapi.api.openapi import update_openapi
 from stac_fastapi.api.routes import Scope, add_route_dependencies, create_async_endpoint
-from stac_fastapi.extensions.core.collection_search.request import BaseCollectionSearchAllGetRequest
+from stac_fastapi.extensions.core.collection_search.request import (
+    BaseCollectionSearchAllGetRequest,
+)
 from stac_fastapi.types.catalogs import Catalogs
 from stac_fastapi.types.config import ApiSettings, Settings
 from stac_fastapi.types.core import AsyncBaseCoreClient, BaseCoreClient
 from stac_fastapi.types.extension import ApiExtension
-from stac_fastapi.types.search import BaseSearchGetRequest, BaseSearchPostRequest, BaseSearchAllGetRequest
+from stac_fastapi.types.search import (
+    BaseSearchGetRequest,
+    BaseSearchPostRequest,
+    BaseSearchAllGetRequest,
+)
 
 
 @attr.s
@@ -121,8 +129,12 @@ class StacApi:
     catalogs_get_request_model: Type[APIRequest] = attr.ib(default=CatalogUri)
     catalog_get_request_model: Type[APIRequest] = attr.ib(default=GetCatalogUri)
     base_catalog_get_request_model: Type[APIRequest] = attr.ib(default=BaseCatalogUri)
-    collections_get_all_request_model: Type[APIRequest] = attr.ib(default=BaseCollectionSearchAllGetRequest)
-    collections_get_request_model: Type[APIRequest] = attr.ib(default=BaseCollectionSearchGetRequest)
+    collections_get_all_request_model: Type[APIRequest] = attr.ib(
+        default=BaseCollectionSearchAllGetRequest
+    )
+    collections_get_request_model: Type[APIRequest] = attr.ib(
+        default=BaseCollectionSearchGetRequest
+    )
     collection_get_request_model: Type[APIRequest] = attr.ib(default=CollectionUri)
     items_get_request_model: Type[APIRequest] = attr.ib(default=ItemCollectionUri)
     item_get_request_model: Type[APIRequest] = attr.ib(default=ItemUri)
@@ -137,7 +149,6 @@ class StacApi:
         )
     )
     route_dependencies: List[Tuple[List[Scope], List[Depends]]] = attr.ib(default=[])
-
 
     def get_extension(self, extension: Type[ApiExtension]) -> Optional[ApiExtension]:
         """Get an extension.
@@ -178,6 +189,7 @@ class StacApi:
             response_model_exclude_none=True,
             methods=["GET"],
             endpoint=create_async_endpoint(self.client.landing_page, EmptyRequest),
+            description="This is the landing page which returns the catalog details for the overall catalog and includes the top-level catalogs and collections.",
         )
 
     def register_conformance_classes(self):
@@ -205,6 +217,7 @@ class StacApi:
             response_model_exclude_none=True,
             methods=["GET"],
             endpoint=create_async_endpoint(self.client.conformance, EmptyRequest),
+            description="This endpoint returns a list of all conformance classes supported by the STAC API.",
         )
 
     def register_get_item(self):
@@ -232,6 +245,7 @@ class StacApi:
             endpoint=create_async_endpoint(
                 self.client.get_item, self.item_get_request_model
             ),
+            description="This endpoint retrieves an item from the STAC API.",
         )
 
     def register_post_search(self):
@@ -240,9 +254,17 @@ class StacApi:
         Returns:
             None
         """
+
         @attr.s
         class search_post_cat_request_model(APIRequest):
-            cat_path: Annotated[str, Path(description="Catalog path", regex=r"^([^/]+)(/catalogs/[^/]+)*$")] = attr.ib()
+            cat_path: Annotated[
+                str,
+                Path(
+                    description="Catalog path",
+                    example="public",
+                    regex=r"^([^/]+)(/catalogs/[^/]+)*$",
+                ),
+            ] = attr.ib()
             search_request: self.search_post_request_model = attr.ib()
 
         self.router.add_api_route(
@@ -266,6 +288,7 @@ class StacApi:
             endpoint=create_async_endpoint(
                 self.client.post_search, search_post_cat_request_model
             ),
+            description="This endpoint allows searching for items in the STAC API.",
         )
 
     def register_get_search(self):
@@ -295,6 +318,7 @@ class StacApi:
             endpoint=create_async_endpoint(
                 self.client.get_search, self.search_get_request_model
             ),
+            description="This endpoint allows searching for items in the STAC API.",
         )
 
     def register_post_all_search(self):
@@ -324,6 +348,7 @@ class StacApi:
             endpoint=create_async_endpoint(
                 self.client.post_search, self.search_post_request_model
             ),
+            description="This endpoint allows searching for all items in the STAC API.",
         )
 
     def register_get_all_search(self):
@@ -353,6 +378,7 @@ class StacApi:
             endpoint=create_async_endpoint(
                 self.client.get_search, self.search_get_all_request_model
             ),
+            description="This endpoint allows searching for all items in the STAC API.",
         )
 
     def register_get_collections(self):
@@ -382,6 +408,7 @@ class StacApi:
             endpoint=create_async_endpoint(
                 self.client.all_collections, self.collections_get_request_model
             ),
+            description="This endpoint retrieves a collection from the STAC API and allows searching collections using the collection-search extension.",
         )
 
     def register_get_all_collections(self):
@@ -411,8 +438,8 @@ class StacApi:
             endpoint=create_async_endpoint(
                 self.client.all_collections, self.collections_get_all_request_model
             ),
+            description="This endpoint retrieves a collection from the STAC API and allows searching collections using the collection-search extension.",
         )
-
 
     def register_get_collection(self):
         """Register get collection endpoint (GET /collection/{collection_id}).
@@ -441,6 +468,7 @@ class StacApi:
             endpoint=create_async_endpoint(
                 self.client.get_collection, self.collection_get_request_model
             ),
+            description="This endpoint retrieves a collection from the STAC API.",
         )
 
     def register_get_item_collection(self):
@@ -470,6 +498,7 @@ class StacApi:
             endpoint=create_async_endpoint(
                 self.client.item_collection, self.items_get_request_model
             ),
+            description="This endpoint retrieves an item collection from the STAC API.",
         )
 
     def register_get_all_catalogs(self):
@@ -481,9 +510,7 @@ class StacApi:
         self.router.add_api_route(
             name="Get All Catalogs",
             path="/catalogs",
-            response_model=(
-                Catalogs if self.settings.enable_response_models else None
-            ),
+            response_model=(Catalogs if self.settings.enable_response_models else None),
             responses={
                 200: {
                     "content": {
@@ -499,6 +526,7 @@ class StacApi:
             endpoint=create_async_endpoint(
                 self.client.all_catalogs, self.catalogs_get_all_request_model
             ),
+            description="This endpoint retrieves all catalogs in the STAC API.",
         )
 
     def register_get_catalogs(self):
@@ -510,9 +538,7 @@ class StacApi:
         self.router.add_api_route(
             name="Get Catalogs",
             path="/catalogs/{cat_path:path}/catalogs",
-            response_model=(
-                Catalogs if self.settings.enable_response_models else None
-            ),
+            response_model=(Catalogs if self.settings.enable_response_models else None),
             responses={
                 200: {
                     "content": {
@@ -528,6 +554,7 @@ class StacApi:
             endpoint=create_async_endpoint(
                 self.client.all_catalogs, self.catalogs_get_request_model
             ),
+            description="This endpoint retrieves all sub-catalogs in the given parent catalog.",
         )
 
     def register_get_catalog(self):
@@ -557,6 +584,7 @@ class StacApi:
             endpoint=create_async_endpoint(
                 self.client.get_catalog, self.catalog_get_request_model
             ),
+            description="This endpoint retrieves a catalog from the STAC API.",
         )
 
     def register_get_base_catalog(self):
@@ -586,6 +614,7 @@ class StacApi:
             endpoint=create_async_endpoint(
                 self.client.get_catalog, self.base_catalog_get_request_model
             ),
+            description="This endpoint retrieves a top-level catalog from the STAC API.",
         )
 
     def register_get_collection(self):
@@ -615,6 +644,7 @@ class StacApi:
             endpoint=create_async_endpoint(
                 self.client.get_collection, self.collection_get_request_model
             ),
+            description="This endpoint retrieves a collection from the STAC API and allows searching collections using the collection-search extension.",
         )
 
     def register_core(self):
@@ -662,6 +692,14 @@ class StacApi:
             routes=self.app.routes,
             servers=self.app.servers,
         )
+
+        openapi_schema["tags"] = [
+            {
+                "name": "Metadata APIs for data - finding and accessing data",
+                "description": """Use these APIs to discover and retrieve **public** and **private** datasets in the EO Data Hub platform via the STAC Catalogue service. After locating dataset metadata—using any of the `/api/catalogue/stac/` endpoints and STAC extensions—you can follow the asset URLs in each feature to download or stream the data itself. These endpoints conform fully to the OGC STAC v1.0.0 specification.
+                """,
+            },
+        ]
 
         self.app.openapi_schema = openapi_schema
         return self.app.openapi_schema
@@ -713,7 +751,7 @@ class StacApi:
 
         # Register core STAC endpoints
         self.register_core()
-        self.app.include_router(self.router)
+        self.app.include_router(self.router, tags=[self.settings.stac_fastapi_tag])
 
         # keep link to the router prefix value
         router_prefix = self.router.prefix

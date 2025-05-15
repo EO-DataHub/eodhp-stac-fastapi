@@ -1,5 +1,6 @@
 # encoding: utf-8
 """Filter Extension."""
+
 from enum import Enum
 from typing import List, Type, Union
 
@@ -7,7 +8,12 @@ import attr
 from fastapi import APIRouter, FastAPI
 from starlette.responses import Response
 
-from stac_fastapi.api.models import CatalogUri, CollectionUri, EmptyRequest, JSONSchemaResponse
+from stac_fastapi.api.models import (
+    CatalogUri,
+    CollectionUri,
+    EmptyRequest,
+    JSONSchemaResponse,
+)
 from stac_fastapi.api.routes import create_async_endpoint
 from stac_fastapi.types.extension import ApiExtension
 
@@ -107,6 +113,7 @@ class FilterExtension(ApiExtension):
             },
             response_class=self.response_class,
             endpoint=create_async_endpoint(self.client.get_queryables, CollectionUri),
+            description="Get available queryables for a collection",
         )
         self.router.add_api_route(
             name="Catalog Queryables",
@@ -122,6 +129,7 @@ class FilterExtension(ApiExtension):
             },
             response_class=self.response_class,
             endpoint=create_async_endpoint(self.client.get_queryables, CatalogUri),
+            description="Get available queryables for a catalog",
         )
         self.router.add_api_route(
             name="Queryables",
@@ -137,5 +145,7 @@ class FilterExtension(ApiExtension):
             },
             response_class=self.response_class,
             endpoint=create_async_endpoint(self.client.get_queryables, EmptyRequest),
+            description="Get available queryables",
         )
-        app.include_router(self.router, tags=["Filter Extension"])
+        STAC_TAG = "Metadata APIs for data - finding and accessing data"
+        app.include_router(self.router, tags=[STAC_TAG])
