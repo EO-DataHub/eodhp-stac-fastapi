@@ -54,7 +54,9 @@ class CollectionSearchExtension(ApiExtension):
             the extension
     """
 
-    GET: BaseCollectionSearchAllGetRequest = attr.ib(default=BaseCollectionSearchAllGetRequest)
+    GET: BaseCollectionSearchAllGetRequest = attr.ib(
+        default=BaseCollectionSearchAllGetRequest
+    )
     POST = None
 
     conformance_classes: List[str] = attr.ib(
@@ -141,7 +143,9 @@ class CollectionSearchPostExtension(CollectionSearchExtension):
     schema_href: Optional[str] = attr.ib(default=None)
     router: APIRouter = attr.ib(factory=APIRouter)
 
-    GET: BaseCollectionSearchAllGetRequest = attr.ib(default=BaseCollectionSearchAllGetRequest)
+    GET: BaseCollectionSearchAllGetRequest = attr.ib(
+        default=BaseCollectionSearchAllGetRequest
+    )
     POST: BaseCollectionSearchPostRequest = attr.ib(
         default=BaseCollectionSearchPostRequest
     )
@@ -174,11 +178,19 @@ class CollectionSearchPostExtension(CollectionSearchExtension):
             },
             response_class=GeoJSONResponse,
             endpoint=create_async_endpoint(self.client.post_all_collections, self.POST),
+            description="This endpoint allows posting all collections and supports searching collections using the collection-search extension.",
         )
 
         @attr.s
         class POST_cat_path(APIRequest):
-            cat_path: Annotated[str, Path(description="Catalog path", regex=r"^([^/]+)(/catalogs/[^/]+)*$")] = attr.ib()
+            cat_path: Annotated[
+                str,
+                Path(
+                    description="Catalog path",
+                    example="public",
+                    regex=r"^([^/]+)(/catalogs/[^/]+)*$",
+                ),
+            ] = attr.ib()
             search_request: self.POST = attr.ib()
 
         self.router.add_api_route(
@@ -197,10 +209,12 @@ class CollectionSearchPostExtension(CollectionSearchExtension):
                 },
             },
             response_class=GeoJSONResponse,
-            endpoint=create_async_endpoint(self.client.post_all_collections, POST_cat_path),
+            endpoint=create_async_endpoint(
+                self.client.post_all_collections, POST_cat_path
+            ),
+            description="This endpoint retrieves collections from the STAC API and allows searching collections using the collection-search extension",
         )
-        app.include_router(self.router)
-
+        app.include_router(self.router, tags=[self.settings.stac_fastapi_tag])
 
     @classmethod
     def from_extensions(
