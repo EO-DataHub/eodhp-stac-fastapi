@@ -212,7 +212,7 @@ class CollectionSearchPostExtension(CollectionSearchExtension):
             endpoint=create_async_endpoint(
                 self.client.post_all_collections, POST_cat_path
             ),
-            description="This endpoint allows posting collections using the specified path and supports searching collections using the collection-search extension.",
+            description="This endpoint retrieves collections from the STAC API and allows searching collections using the collection-search extension",
         )
         app.include_router(self.router, tags=[self.settings.stac_fastapi_tag])
 

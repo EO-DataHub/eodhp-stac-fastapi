@@ -112,7 +112,7 @@ class AggregationExtension(ApiExtension):
             path="/catalogs/{cat_path:path}/collections/{collection_id}/aggregations",
             methods=["GET", "POST"],
             endpoint=create_async_endpoint(self.client.get_aggregations, CollectionUri),
-            description="Get available aggregations",
+            description="Get available aggregations using path and collection_id",
         )
 
         self.router.add_api_route(
@@ -147,7 +147,7 @@ class AggregationExtension(ApiExtension):
             path="/aggregate",
             methods=["POST"],
             endpoint=create_async_endpoint(self.client.aggregate, self.POST),
-            description="Get available aggregations",
+            description="Get aggregate for the catalog",
         )
 
         STAC_TAG = "Metadata APIs for data - finding and accessing data"
