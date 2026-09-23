@@ -3,6 +3,7 @@
 import copy
 import functools
 import inspect
+import ipaddress
 import jwt
 import logging
 import os
@@ -149,15 +150,33 @@ def extract_headers(
     return headers  # Allows support for more headers in future, e.g. group information
 
 
-def _authorize_workspace(workspace: Optional[str], headers: Dict[str, Any]) -> None:
+def _is_loopback(host: Optional[str]) -> bool:
+    try:
+        return host is not None and ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+def _authorize_workspace(
+    workspace: Optional[str], headers: Dict[str, Any], client_host: Optional[str] = None
+) -> None:
     """Reject a write to a workspace the caller's verified token doesn't grant access to.
 
     `workspace` is a client-supplied request field (path/query param), not derived from
     the verified JWT, so without this check a caller could set it to any workspace
     regardless of which ones their token actually verifies membership of - e.g. writing
     an item into a workspace they don't own.
+
+    Unauthenticated requests from loopback are exempt: the stac-fastapi-ingester sidecar
+    writes to the read-write container over localhost with a `workspace` param and no
+    token. That container binds 127.0.0.1 only, so loopback means "from inside the pod".
+    A request that does carry a token is always checked against it.
     """
-    if workspace is not None and workspace not in headers.get("X-Workspaces", []):
+    if workspace is None:
+        return
+    if not headers.get("X-Authenticated") and _is_loopback(client_host):
+        return
+    if workspace not in headers.get("X-Workspaces", []):
         raise HTTPException(status_code=403, detail="Not authorized for this workspace")
 
 
@@ -182,7 +201,9 @@ def create_async_endpoint(
         ):
             """Endpoint."""
             kwargs = request_data.kwargs()
-            _authorize_workspace(kwargs.get("workspace"), headers)
+            _authorize_workspace(
+                kwargs.get("workspace"), headers, request.client.host if request.client else None
+            )
             return _wrap_response(await func(request=request, auth_headers=headers, **kwargs),
                                   request.method,
                                   request.url.path)

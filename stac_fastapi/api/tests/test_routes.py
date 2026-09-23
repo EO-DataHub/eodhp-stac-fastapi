@@ -136,3 +136,25 @@ class TestAuthorizeWorkspace:
         """Not every request model carries a `workspace` field (e.g. read endpoints), so
         None must not be rejected."""
         routes._authorize_workspace(None, {"X-Workspaces": []})
+
+    def test_an_unauthenticated_caller_from_loopback_is_allowed(self):
+        """The stac-fastapi-ingester sidecar writes over localhost with no token."""
+        headers = {"X-Workspaces": [], "X-Authenticated": False}
+        routes._authorize_workspace("test_workspace", headers, "127.0.0.1")
+        routes._authorize_workspace("test_workspace", headers, "::1")
+
+    def test_an_unauthenticated_caller_from_elsewhere_is_rejected(self):
+        headers = {"X-Workspaces": [], "X-Authenticated": False}
+        for host in ("10.0.3.7", "testclient", None):
+            with pytest.raises(HTTPException) as raised:
+                routes._authorize_workspace("test_workspace", headers, host)
+
+            assert raised.value.status_code == 403
+
+    def test_an_authenticated_caller_from_loopback_is_still_checked(self):
+        """Loopback only exempts tokenless requests; a token is always held to its claims."""
+        headers = {"X-Workspaces": ["test_workspace"], "X-Authenticated": True}
+        with pytest.raises(HTTPException) as raised:
+            routes._authorize_workspace("someone_elses_workspace", headers, "127.0.0.1")
+
+        assert raised.value.status_code == 403
