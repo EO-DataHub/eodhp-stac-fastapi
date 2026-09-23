@@ -32,7 +32,7 @@ from stac_fastapi.api import routes
 PRIVATE_KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
 
-def _token(key: RSAPrivateKey, aud: str = "account", **claims: object) -> str:
+def _token(key: RSAPrivateKey, aud: str = "eodh", **claims: object) -> str:
     claims = {"sub": "test-user", "preferred_username": "test-user", "aud": aud, **claims}
     return jwt.encode(claims, key, algorithm="RS256")
 
@@ -65,7 +65,7 @@ def test_a_forged_signature_is_rejected():
     """
     header = jwt.utils.base64url_encode(b'{"alg":"RS256","typ":"JWT"}').decode()
     payload = jwt.utils.base64url_encode(
-        b'{"sub":"attacker","preferred_username":"attacker","workspaces":["test_workspace"],"aud":"account"}'
+        b'{"sub":"attacker","preferred_username":"attacker","workspaces":["test_workspace"],"aud":"eodh"}'
     ).decode()
     forged_signature = jwt.utils.base64url_encode(b"not-a-real-signature").decode()
     forged_token = f"{header}.{payload}.{forged_signature}"

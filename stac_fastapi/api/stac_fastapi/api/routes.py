@@ -73,9 +73,10 @@ bearer_scheme = HTTPBearer(auto_error=False)
 EODH_DOMAIN = os.getenv("EODH_DOMAIN", "dev.eodatahub.org.uk")
 KEYCLOAK_REALM = os.getenv("KEYCLOAK_REALM", "eodhp")
 
-# Matches the client IDs tokens for this platform are actually issued under, per the
-# reference implementation in eodh-ac-api/wf-catalogue-service.
-JWT_AUDIENCE = ["oauth2-proxy-workspaces", "oauth2-proxy", "account"]
+# The Keycloak client IDs platform tokens are issued for (the audience mappers on the eodh and
+# eodh-workspaces clients, eodhp-argocd-deployment apps/keycloak/base/realms.yaml). This list is
+# duplicated across the platform's services, so change them together.
+JWT_AUDIENCE = ["eodh", "eodh-workspaces"]
 
 
 @lru_cache
