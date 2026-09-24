@@ -3,15 +3,18 @@
 import copy
 import functools
 import inspect
+import ipaddress
 import jwt
 import logging
-import requests
+import os
+from functools import lru_cache
 from typing import Any, Callable, Dict, List, Optional, Type, TypedDict, Union
 
-from fastapi import Depends, params
+from fastapi import Depends, HTTPException, params
 from fastapi.dependencies.utils import get_parameterless_sub_dependant
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jwt import PyJWKClient, PyJWTError
 from pydantic import BaseModel
 from starlette.concurrency import run_in_threadpool
 from starlette.requests import Request
@@ -67,6 +70,26 @@ def sync_to_async(func):
 # Define the OAuth2 scheme for Bearer token
 bearer_scheme = HTTPBearer(auto_error=False)
 
+# Domain used to build the Keycloak JWKS endpoint for verifying JWT signatures.
+EODH_DOMAIN = os.getenv("EODH_DOMAIN", "dev.eodatahub.org.uk")
+KEYCLOAK_REALM = os.getenv("KEYCLOAK_REALM", "eodhp")
+
+# The Keycloak client IDs platform tokens are issued for (the audience mappers on the eodh and
+# eodh-workspaces clients, eodhp-argocd-deployment apps/keycloak/base/realms.yaml). This list is
+# duplicated across the platform's services, so change them together.
+JWT_AUDIENCE = ["eodh", "eodh-workspaces"]
+
+
+@lru_cache
+def _jwks_client() -> PyJWKClient:
+    """One client per process, so the JWKS document is cached rather than re-fetched from
+    Keycloak on every request. PyJWKClient does this caching internally, but only across
+    calls on the same instance.
+    """
+    certs_url = f"https://{EODH_DOMAIN}/keycloak/realms/{KEYCLOAK_REALM}/protocol/openid-connect/certs"
+    return PyJWKClient(certs_url)
+
+
 # TODO: Also extract group information from the headers
 def extract_headers(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
@@ -83,11 +106,22 @@ def extract_headers(
     if credentials:
         # Exchange the token
         keycloak_token = credentials.credentials
-        decoded_jwt = jwt.decode(
-            keycloak_token,
-            options={"verify_signature": False},
-            algorithms=["HS256"],
-        )
+        # The signature is verified against Keycloak's own published key, rather than
+        # trusting an upstream gateway to have checked it: a gateway sitting in front of
+        # the public path does not cover traffic that reaches this service directly from
+        # elsewhere on the cluster network.
+        try:
+            signing_key = _jwks_client().get_signing_key_from_jwt(keycloak_token)
+            decoded_jwt = jwt.decode(
+                keycloak_token,
+                signing_key.key,
+                audience=JWT_AUDIENCE,
+                algorithms=["RS256"],
+            )
+        except PyJWTError as e:
+            logger.warning(f"Rejected invalid JWT: {e}")
+            raise HTTPException(status_code=401, detail="Invalid JWT token") from e
+
         username = decoded_jwt.get("preferred_username", None)
         if "workspaces" not in decoded_jwt:
             # If the JWT does not contain the workspaces claim, set it to an empty set
@@ -116,6 +150,36 @@ def extract_headers(
     return headers  # Allows support for more headers in future, e.g. group information
 
 
+def _is_loopback(host: Optional[str]) -> bool:
+    try:
+        return host is not None and ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+def _authorize_workspace(
+    workspace: Optional[str], headers: Dict[str, Any], client_host: Optional[str] = None
+) -> None:
+    """Reject a write to a workspace the caller's verified token doesn't grant access to.
+
+    `workspace` is a client-supplied request field (path/query param), not derived from
+    the verified JWT, so without this check a caller could set it to any workspace
+    regardless of which ones their token actually verifies membership of - e.g. writing
+    an item into a workspace they don't own.
+
+    Unauthenticated requests from loopback are exempt: the stac-fastapi-ingester sidecar
+    writes to the read-write container over localhost with a `workspace` param and no
+    token. That container binds 127.0.0.1 only, so loopback means "from inside the pod".
+    A request that does carry a token is always checked against it.
+    """
+    if workspace is None:
+        return
+    if not headers.get("X-Authenticated") and _is_loopback(client_host):
+        return
+    if workspace not in headers.get("X-Workspaces", []):
+        raise HTTPException(status_code=403, detail="Not authorized for this workspace")
+
+
 def create_async_endpoint(
     func: Callable,
     request_model: Union[Type[APIRequest], Type[BaseModel], Dict],
@@ -136,7 +200,11 @@ def create_async_endpoint(
             headers=Depends(extract_headers),
         ):
             """Endpoint."""
-            return _wrap_response(await func(request=request, auth_headers=headers, **request_data.kwargs()),
+            kwargs = request_data.kwargs()
+            _authorize_workspace(
+                kwargs.get("workspace"), headers, request.client.host if request.client else None
+            )
+            return _wrap_response(await func(request=request, auth_headers=headers, **kwargs),
                                   request.method,
                                   request.url.path)
 

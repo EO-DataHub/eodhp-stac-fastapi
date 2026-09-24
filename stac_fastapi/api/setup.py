@@ -7,6 +7,7 @@ with open("README.md") as f:
 
 install_requires = [
     "brotli_asgi",
+    "PyJWT[crypto]",
     "stac-fastapi.types~=4.0",
 ]
 
